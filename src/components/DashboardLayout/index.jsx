@@ -3,7 +3,7 @@ import * as S from './style'
 import {NotificationButton} from '../../components/Buttons'
 
 function DashboardLayout({ children,
-  sidebarTitle = "Luzio",
+  sidebarTitle = "Canguru",
   menuItems = [],
   userName = "Usuário",
   userAvatar = "👤" }) {

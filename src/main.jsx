@@ -10,7 +10,7 @@ import Homealuno from './container/home-Aluno'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <MyGlobalStyles />
-    <Homealuno />
+    <RegistroUsuario />
 
   </React.StrictMode>,
 )

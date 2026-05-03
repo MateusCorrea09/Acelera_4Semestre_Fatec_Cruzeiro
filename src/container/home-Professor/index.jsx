@@ -23,6 +23,7 @@ function HomeProfessor() {
 
   const menuConfig = [
     { label: "Dashboard", onClick: () => console.log("Home") },
+    { label: "Atividade", onClick: () => console.log("Sair") },
     { label: "Minhas Salas", onClick: () => console.log("Salas") },
     { label: "Relatórios", onClick: () => console.log("Relatorios") },
     { label: "Sair", onClick: () => console.log("Sair") },
