@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import DashboardLayout from '../../components/DashboardLayout';
 import * as S from './style';
 
-import InfoCard from '../../components/Infocard';
+import InfoCard from '../../components/InfoCard';
 import { NotificationButton } from '../../components/Buttons';
 
 import { Modal, NotificationModal } from '../../components/Modal';
