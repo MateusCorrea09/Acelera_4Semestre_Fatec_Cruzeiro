@@ -66,3 +66,34 @@ export function NotificationModal({ isOpen, notifications = [] }) {
     </AnimatePresence>
   );
 }
+
+export function QuestionModal({ title, isOpen, onClose, children }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <S.Overlay
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <S.ModalContainer
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header>
+              <h2>{title}</h2>
+              <button onClick={onClose}>&times;</button>
+            </header>
+
+            <S.Content>
+              {children}
+            </S.Content>
+          </S.ModalContainer>
+        </S.Overlay>
+      )}
+    </AnimatePresence>
+  );
+}

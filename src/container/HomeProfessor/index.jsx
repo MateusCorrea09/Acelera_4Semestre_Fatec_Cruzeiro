@@ -14,6 +14,7 @@ function HomeProfessor() {
 
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const abrirDetalhes = (aluno) => {
@@ -37,7 +38,7 @@ function HomeProfessor() {
     >
       <S.Panel>
         <S.SearchBar>
-          <input type="text" placeholder="Alterar sala" />
+          <input type="text" placeholder="Pesquisar aluno(a)" />
         </S.SearchBar>
 
         <S.InteractionsArea>

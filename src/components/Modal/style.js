@@ -18,7 +18,7 @@ export const Overlay = styled(motion.div)`
 export const ModalContainer = styled(motion.div)`
   background-color: white;
   width: 90%;
-  max-width: 500px;
+  max-width: 700px; 
   border-radius: 24px;
   padding: 30px;
   position: relative;
@@ -31,12 +31,13 @@ export const ModalContainer = styled(motion.div)`
     align-items: center;
     margin-bottom: 20px;
     border-bottom: 2px solid #FFF9F5;
-    padding-bottom: 10px;
+    padding-bottom: 15px;
 
     h2 {
       color: #FF8C42;
       margin: 0;
-      font-size: 1.4rem;
+      font-size: 1.6rem;
+      font-weight: bold;
     }
 
     button {
@@ -64,10 +65,108 @@ export const ModalContainer = styled(motion.div)`
 export const Content = styled.div`
   color: #6D6D6D;
   line-height: 1.6;
+  width: 100%;
 `;
+
+export const FormQuestion = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    label {
+      font-weight: 600;
+      color: #4A4A4A;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 15px;
+      border: 1.5px solid #FDEEDC;
+      border-radius: 12px;
+      background: #FFFBFA;
+      resize: none;
+      font-family: inherit;
+      transition: 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: #FF8C42;
+        background: white;
+      }
+    }
+  }
+`;
+
+export const OptionsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Duas colunas para as alternativas */
+  gap: 15px;
+  width: 100%;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr; 
+  }
+`;
+
+export const OptionInputGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFF9F5;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid #FDEEDC;
+  transition: 0.2s;
+
+  &.is-correct {
+    border-color: #4CAF50;
+    background: #F0FFF4;
+  }
+
+  input[type="radio"] {
+    accent-color: #FF8C42;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: #4A4A4A;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &:focus-within {
+    border-color: #FF8C42;
+  }
+`;
+
+export const ModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #FFF9F5;
+`;
+
+
 export const Container = styled(motion.div)`
   position: absolute;
-  top: 80px; /* Ajuste conforme a altura da sua Topbar */
+  top: 80px; 
   right: 30px;
   width: 320px;
   background-color: white;

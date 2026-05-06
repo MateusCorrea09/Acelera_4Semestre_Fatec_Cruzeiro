@@ -7,11 +7,13 @@ import RegistroUsuario from './container/RegistroUsuario'
 import Login from './container/Login'
 import Homealuno from './container/Homealuno'
 import ManagerTurma from './container/ManagerTurma'
+import CreateQuiz2 from './container/CreateQuiz2'
+import Reports from './container/Reports'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <MyGlobalStyles />
-    <ManagerTurma/>
+    <CreateQuiz2/>
 
   </React.StrictMode>,
 )

@@ -74,6 +74,7 @@ export const CarouselTrack = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 25px;
 `;
+
 export const FooterPanel = styled.div`
   background-color: #FDEEDC;
   height: 80px;
