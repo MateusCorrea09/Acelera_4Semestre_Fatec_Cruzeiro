@@ -1,22 +1,29 @@
 import React from "react";
 import * as S from './style';
 
-export function Button({ children, ...props }) {
-    return <S.MyButton {...props}>{children}</S.MyButton>;
-}
-
-export function NotificationButton({ icon, onClick, ...props }) {
+// Usando o componente de estilo diretamente como base
+export const MyButton = ({ children, ...props }) => {
     return (
-        <S.NotificationButton onClick={onClick} {...props}>
-            {icon}
-        </S.NotificationButton>
+        <S.MyButton {...props}>
+            {children}
+        </S.MyButton>
     );
-}
+};
 
-export function BackButton({ children, ...props }) {
-    return <S.BtnVoltar {...props}>{children}</S.BtnVoltar>;
-}
+// Aliases
+export const Button = MyButton;
+export const PrimaryButton = MyButton;
 
-export function LinkButton({ children, ...props }) {
-    return <S.LinkButton {...props}>{children}</S.LinkButton>;
-}
+export const NotificationButton = ({ icon, onClick, ...props }) => (
+    <S.NotificationButton onClick={onClick} {...props}>
+        {icon}
+    </S.NotificationButton>
+);
+
+export const BackButton = ({ children, ...props }) => (
+    <S.BtnVoltar {...props}>{children}</S.BtnVoltar>
+);
+
+export const LinkButton = ({ children, ...props }) => (
+    <S.LinkButton {...props}>{children}</S.LinkButton>
+);
