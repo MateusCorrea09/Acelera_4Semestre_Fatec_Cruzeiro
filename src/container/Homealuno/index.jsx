@@ -23,9 +23,22 @@ function Homealuno() {
     };
 
     const mockNotifs = [
-        { id: 1, text: "Novo quiz disponível: Matemática", time: "5 min atrás" },
-        { id: 2, text: "Sua nota foi postada!", time: "2 horas atrás" }
+        {
+            id: 1,
+            text: "Você tem um novo quiz de Anatomia disponível!",
+            time: "5 min atrás",
+            isQuiz: true, // Isso ativa o botão
+            quizId: "123"
+        },
+        {
+            id: 2,
+            text: "Sua nota da P1 já está disponível.",
+            time: "2 horas atrás",
+            isQuiz: false // Notificação comum, sem botão
+        }
     ];
+
+
 
     const menuConfig = [
         { label: "Dashboard", onClick: () => console.log("Home") },

@@ -193,26 +193,62 @@ export const List = styled.div`
   max-height: 400px;
   overflow-y: auto;
 `;
+// Adicione/Substitua no seu arquivo de estilos
 
 export const NotificationItem = styled.div`
   padding: 15px 20px;
   border-bottom: 1px solid #FFF9F5;
   transition: background 0.2s;
-  cursor: pointer;
 
   &:hover {
     background-color: #FFF9F5;
   }
 
-  p {
-    margin: 0;
-    font-size: 0.85rem;
-    color: #4A4A4A;
+  .content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
   }
 
-  span {
+  .text-section {
+    flex: 1;
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #4A4A4A;
+      line-height: 1.4;
+    }
+
+    span {
+      font-size: 0.7rem;
+      color: #FF8C42;
+      font-weight: 500;
+      display: block;
+      margin-top: 4px;
+    }
+  }
+
+  .action-button {
+    background-color: #FF8C42;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
     font-size: 0.75rem;
-    color: #FF8C42;
-    font-weight: 500;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #e67e35;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
   }
 `;

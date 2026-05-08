@@ -33,6 +33,7 @@ export function Modal({ isOpen, onClose, title, children }) {
   );
 }
 
+
 export function NotificationModal({ isOpen, notifications = [] }) {
   return (
     <AnimatePresence>
@@ -51,8 +52,25 @@ export function NotificationModal({ isOpen, notifications = [] }) {
             {notifications.length > 0 ? (
               notifications.map((notif) => (
                 <S.NotificationItem key={notif.id}>
-                  <p>{notif.text}</p>
-                  <span>{notif.time}</span>
+                  <div className="content-wrapper">
+                    <div className="text-section">
+                      <p>{notif.text}</p>
+                      <span>{notif.time}</span>
+                    </div>
+                    
+                    {notif.isQuiz && (
+                      <button 
+                        className="action-button"
+                        onClick={() => {
+                          console.log("Redirecionando para o quiz:", notif.quizId);
+                          // Aqui você usaria o useNavigate() do react-router-dom futuramente
+                          // navigate(`/quiz/${notif.quizId}`);
+                        }}
+                      >
+                        Fazer
+                      </button>
+                    )}
+                  </div>
                 </S.NotificationItem>
               ))
             ) : (
@@ -95,5 +113,26 @@ export function QuestionModal({ title, isOpen, onClose, children }) {
         </S.Overlay>
       )}
     </AnimatePresence>
+  );
+}
+
+export function ReviewModal({ isOpen, onClose, quizTitle, children }) {
+  if (!isOpen) return null;
+  return (
+    <S.Overlay onClick={onClose}>
+      <S.ModalContainer 
+        style={{ maxWidth: '800px', width: '95%' }} // Um pouco mais largo para tabelas/listas
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Revisão de Desempenho</span>
+            <h2 style={{ marginTop: '5px' }}>{quizTitle}</h2>
+          </div>
+          <button onClick={onClose}>&times;</button>
+        </header>
+        <S.Content>{children}</S.Content>
+      </S.ModalContainer>
+    </S.Overlay>
   );
 }
