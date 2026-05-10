@@ -5,14 +5,16 @@ import { Modal } from '../../components/Modal';
 import { MyButton } from '../../components/Buttons';
 import LCalendar from '../../components/LCalendar';
 import * as S from './style';
+import { useNavigate } from 'react-router-dom';
 
 function ManagerTurma() {
+  const navigate = useNavigate();
   const [showCalendar, setShowCalendar] = useState(false);
-  const [showClassModal, setShowClassModal] = useState(false); // Estado para o novo modal
+  const [showClassModal, setShowClassModal] = useState(false); 
   const [dateRange, setDateRange] = useState(new Date());
   const [selectedClass, setSelectedClass] = useState(null);
 
-  // Exemplo de dados vindos das tabelas "Professores" e "Salas" do seu SQL Server
+
   const salasDoProfessor = [
     { id: 1, nome: "7º Ano" },
     { id: 2, nome: "8º Ano" },
@@ -20,11 +22,15 @@ function ManagerTurma() {
   ];
 
   const menuConfig = [
-    { label: "Dashboard", onClick: () => console.log("Home") },
-    { label: "Atividade", onClick: () => console.log("Sair") },
-    { label: "Minhas Salas", onClick: () => setShowClassModal(true) },
-    { label: "Relatórios", onClick: () => console.log("Relatorios") },
-    { label: "Sair", onClick: () => console.log("Sair") },
+    { label: "Dashboard", onClick: () => navigate('/home-professor') }, 
+    { label: "Atividade", onClick: () => navigate('/criar-quiz') },
+    { label: "Minhas Salas", onClick: () => navigate('/gerenciar-turmas') },
+    { label: "Relatórios", onClick: () => navigate('/relatorios') },
+    { label: "Sair", onClick: () => {
+        localStorage.clear(); 
+        navigate('/'); 
+      } 
+    },
   ];
 
   const stats = {

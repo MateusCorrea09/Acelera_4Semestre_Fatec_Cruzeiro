@@ -4,32 +4,32 @@ import { Modal, QuestionModal } from "../../components/Modal";
 import { MyButton } from '../../components/Buttons';
 import LCalendar from '../../components/LCalendar';
 import * as S from './style';
+import { useNavigate } from 'react-router-dom';
 
 function CreateQuiz2() {
+  const navigate = useNavigate();
   // Estados de Fluxo
   const [creationMode, setCreationMode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
-  // Estados de Dados
+ 
   const [questions, setQuestions] = useState([]);
   const [selectedContainers, setSelectedContainers] = useState([]);
   const [dateRange, setDateRange] = useState(new Date());
 
-  // Estados do Formulário (Modal)
-  const [enunciado, setEnunciado] = useState("");
+ const [enunciado, setEnunciado] = useState("");
   const [correctOption, setCorrectOption] = useState(0);
   const [options, setOptions] = useState(["", "", "", ""]);
 
-  //A lista abaixo carrega todos os containers de perguntas já cadastrados
-  const availableContainers = [
+ const availableContainers = [
     { id: 1, name: "Soma", count: 15 },
     { id: 2, name: "multiplicação", count: 10 },
     { id: 3, name: "divisão", count: 20 },
   ];
 
-  // Abrir modal para nova pergunta
+  
   const handleOpenCreate = () => {
     setEditingIndex(null);
     setEnunciado("");
@@ -38,7 +38,7 @@ function CreateQuiz2() {
     setIsModalOpen(true);
   };
 
-  // Abrir modal para editar pergunta existente
+  
   const handleOpenEdit = (index) => {
     const q = questions[index];
     setEditingIndex(index);
@@ -64,23 +64,28 @@ function CreateQuiz2() {
     };
 
     if (editingIndex !== null) {
-      // Atualiza pergunta existente
+      
       const updated = [...questions];
       updated[editingIndex] = questionData;
       setQuestions(updated);
     } else {
-      // Adiciona nova pergunta
+      
       setQuestions([...questions, questionData]);
     }
 
     setIsModalOpen(false);
   };
+  
   const menuConfig = [
-    { label: "Dashboard", onClick: () => console.log("Home") },
-    { label: "Atividade", onClick: () => console.log("Sair") },
-    { label: "Minhas Salas", onClick: () => console.log("Salas") },
-    { label: "Relatórios", onClick: () => console.log("Relatorios") },
-    { label: "Sair", onClick: () => console.log("Sair") },
+    { label: "Dashboard", onClick: () => navigate('/home-professor') }, 
+    { label: "Atividade", onClick: () => navigate('/criar-quiz') },
+    { label: "Minhas Salas", onClick: () => navigate('/gerenciar-turmas') },
+    { label: "Relatórios", onClick: () => navigate('/relatorios') },
+    { label: "Sair", onClick: () => {
+        localStorage.clear(); 
+        navigate('/'); 
+      } 
+    },
   ];
 
   return (

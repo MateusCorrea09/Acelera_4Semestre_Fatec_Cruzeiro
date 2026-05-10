@@ -1,21 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../../components/DashboardLayout';
 import * as S from './style';
 import InfoCard from '../../components/InfoCard';
-import {Modal} from '../../components/Modal';
+import { Modal } from '../../components/Modal';
+import { useNavigate } from 'react-router-dom';
+
 
 function HomeProfessor() {
-  const [alunos] = useState([
-    { id: 1, nome: "Lucas", sala: "101", nota: "8.5", acertos: 8, desempenho: "Ótimo" },
-    { id: 2, nome: "Ana", sala: "101", nota: "9.0", acertos: 9, desempenho: "Excelente" },
-    { id: 3, nome: "Beatriz", sala: "101", nota: "7.0", acertos: 7, desempenho: "Bom" }
-  ]);
+  const navigate = useNavigate();
 
+  
+  const [alunos, setAlunos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  
+  useEffect(() => {
+    fetch('http://localhost:3001/alunos')
+      .then(res => res.json())
+      .then(data => {
+        console.log("Dados que chegaram do Banco:", data); 
+        setAlunos(data);
+        setLoading(false);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
 
   const abrirDetalhes = (aluno) => {
     setSelectedStudent(aluno);
@@ -23,18 +35,24 @@ function HomeProfessor() {
   };
 
   const menuConfig = [
-    { label: "Dashboard", onClick: () => console.log("Home") },
-    { label: "Atividade", onClick: () => console.log("Sair") },
-    { label: "Minhas Salas", onClick: () => console.log("Salas") },
-    { label: "Relatórios", onClick: () => console.log("Relatorios") },
-    { label: "Sair", onClick: () => console.log("Sair") },
+    { label: "Dashboard", onClick: () => navigate('/home-professor') },
+    { label: "Atividade", onClick: () => navigate('/criar-quiz') },
+    { label: "Minhas Salas", onClick: () => navigate('/gerenciar-turmas') },
+    { label: "Relatórios", onClick: () => navigate('/relatorios') },
+    {
+      label: "Sair", onClick: () => {
+        localStorage.clear();
+        navigate('/');
+      }
+    },
   ];
 
   return (
+
     <DashboardLayout
       sidebarTitle="Professor"
       menuItems={menuConfig}
-      userName="Prof. Nome_professor"
+      userName={`Prof. ${localStorage.getItem('userName') || 'Nome_professor'}`}
     >
       <S.Panel>
         <S.SearchBar>
@@ -45,22 +63,32 @@ function HomeProfessor() {
           <div className="label-tab">Nome_turma</div>
 
           <S.CarouselTrack>
-            {alunos.map((aluno, index) => (
-              <motion.div
-                key={aluno.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.15 }}
-              >
-                <InfoCard
-                  icon="👨‍🎓"
-                  title={aluno.nome}
-                  tag={`Sala ${aluno.sala}`}
-                  footerText={<>RESULTADO_QUIZ <br /> {aluno.nota}</>}
-                  onClick={() => abrirDetalhes(aluno)}
-                />
-              </motion.div>
-            ))}
+            {loading ? (
+              <p>Carregando alunos...</p>
+            ) : (
+              alunos.map((aluno, index) => (
+                <motion.div
+                  key={aluno.id} 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.15 }}
+                >
+                  <InfoCard
+                    icon="👨‍🎓"
+                    title={aluno.nome} 
+                    tag={aluno.sala}  
+                    footerText={
+                      <>
+                        RESULTADO <br />
+                        {/* Se nota for null ou undefined, mostra '---' */}
+                        {aluno.nota !== null && aluno.nota !== undefined ? aluno.nota : '---'}
+                      </>
+                    }
+                    onClick={() => abrirDetalhes(aluno)}
+                  />
+                </motion.div>
+              ))
+            )}
           </S.CarouselTrack>
         </S.InteractionsArea>
 

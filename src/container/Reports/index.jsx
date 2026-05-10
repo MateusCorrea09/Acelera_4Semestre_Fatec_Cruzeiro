@@ -4,30 +4,34 @@ import { Modal } from "../../components/Modal";
 import { MyButton } from '../../components/Buttons';
 import ResultBar from '../../components/ResultBar';
 import * as S from './style';
+import { useNavigate } from 'react-router-dom';
 
 function Reports() {
-  // 1. Mock de turmas (Dados do seu SQL Server)
+  const navigate = useNavigate();
   const myClasses = [
     { id: 1, name: "7º Ano A", totalaluno: 19 },
     { id: 2, name: "8º Ano B", totalaluno: 24 },
     { id: 3, name: "9º Ano C", totalaluno: 32 },
   ];
 
-  // 2. Estado iniciando com a primeira turma da lista
   const [showClassModal, setShowClassModal] = useState(false);
   const [currentClass, setCurrentClass] = useState(myClasses[0]); 
 
   const menuConfig = [
-    { label: "Dashboard", onClick: () => console.log("Home") },
-    { label: "Atividade", onClick: () => console.log("Atividades") },
-    { label: "Minhas Salas", onClick: () => setShowClassModal(true) },
-    { label: "Relatórios", onClick: () => console.log("Relatorios") },
-    { label: "Sair", onClick: () => console.log("Sair") },
+    { label: "Dashboard", onClick: () => navigate('/home-professor') }, 
+    { label: "Atividade", onClick: () => navigate('/criar-quiz') },
+    { label: "Minhas Salas", onClick: () => navigate('/gerenciar-turmas') },
+    { label: "Relatórios", onClick: () => navigate('/relatorios') },
+    { label: "Sair", onClick: () => {
+        localStorage.clear(); 
+        navigate('/'); 
+      } 
+    },
   ];
 
-  // 3. Stats agora pegam o total de alunos dinamicamente da turma selecionada
+  
   const stats = {
-    totalAlunos: currentClass.totalaluno, // Puxa do estado atual
+    totalAlunos: currentClass.totalaluno, 
     quizzesRealizados: 12,
     mediaGeral: 78
   };
@@ -58,7 +62,7 @@ function Reports() {
         <S.SummaryGrid>
           <S.KPICard>
             <span>Alunos Ativos</span>
-            {/* Número dinâmico no KPI */}
+          
             <strong>{stats.totalAlunos}</strong>
           </S.KPICard>
           <S.KPICard>
