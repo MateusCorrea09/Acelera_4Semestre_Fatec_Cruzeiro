@@ -229,3 +229,31 @@ export const QuestionItem = styled.div`
     font-weight: 600;
   }
 `;
+export const ExistingContainersSection = styled.div`
+  margin-top: 25px;
+  width: 100%;
+`;
+
+export const ContainersList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+`;
+
+export const ContainerRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+
+  .container-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+`;

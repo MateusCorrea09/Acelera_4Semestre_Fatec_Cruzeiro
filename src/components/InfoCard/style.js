@@ -17,16 +17,25 @@ export const Card = styled.div`
     border-color: #FF8C42;
   }
 
-  .icon-placeholder {
-    width: 90px;
-    height: 90px;
-    background-color: #FFF1E6;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-  }
+/* Procure pela classe do ícone/círculo no seu styled-component do Card */
+.icon-placeholder {
+  width: 60px; /* ou o tamanho padrão do seu projeto */
+  height: 60px;
+  background-color: #fdf2e9;
+  border-radius: 50%;
+  
+  /* Centraliza o texto/número perfeitamente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Garante que o texto encolha um pouco se for o nome de um quiz grande */
+  font-size: 0.9rem; 
+  font-weight: bold;
+  color: #ff7b00;
+  text-align: center;
+  padding: 5px;
+}
 
   h3 {
     margin: 0;
@@ -53,4 +62,19 @@ export const Card = styled.div`
     font-size: 0.8rem;
     font-weight: bold;
   }
+`;
+export const CircleIcon = styled.div`
+  width: 80px;  /* ou o tamanho que você definiu */
+  height: 80px;
+  background-color: #fdf2e9; /* cor bege do seu print */
+  border-radius: 50%;
+  
+  /* Linhas cruciais para centralizar o texto/número perfeitamente no meio do círculo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  font-weight: bold;
+  color: #ff7b00; /* Laranja correspondente à sua identidade */
+  font-size: 1.2rem;
 `;

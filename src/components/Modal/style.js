@@ -74,34 +74,22 @@ export const FormQuestion = styled.form`
   gap: 20px;
 
   .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  width: 100%;
+}
+.input-group label {
+  margin-bottom: 6px;
+  font-weight: bold;
+}
 
-    label {
-      font-weight: 600;
-      color: #4A4A4A;
-      font-size: 0.95rem;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 100px;
-      padding: 15px;
-      border: 1.5px solid #FDEEDC;
-      border-radius: 12px;
-      background: #FFFBFA;
-      resize: none;
-      font-family: inherit;
-      transition: 0.2s;
-
-      &:focus {
-        outline: none;
-        border-color: #FF8C42;
-        background: white;
-      }
-    }
-  }
+.input-group textarea, 
+.input-group input {
+  width: 100%;
+  box-sizing: border-box;
+}
 `;
 
 export const OptionsGrid = styled.div`
