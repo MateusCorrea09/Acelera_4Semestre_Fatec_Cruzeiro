@@ -42,3 +42,31 @@ export const ButtonContainer = styled.div`
   width: 100%;
   
 `
+export const RegisterContainer = styled.div`
+  margin-top: 22px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 0.95rem;
+  color: #777;
+`;
+
+export const RegisterLink = styled.button`
+  background: none;
+  border: none;
+
+  color: #FF8C42;
+
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+`;

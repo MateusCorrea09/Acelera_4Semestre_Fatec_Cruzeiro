@@ -10,7 +10,7 @@ import Homealuno from './container/Homealuno'
 import ManagerTurma from './container/ManagerTurma'
 import CreateQuiz2 from './container/CreateQuiz2'
 import Reports from './container/Reports'
-// ... outros imports
+import RegistroUsuario from './container/RegistroUsuario'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -19,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         {/* Página inicial é o Login */}
         <Route path="/" element={<Login />} />
+        <Route path="/cadastro" element={<RegistroUsuario />} />
         
         {/* Rotas do Professor */}
         <Route path="/home-professor" element={<HomeProfessor />} />
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         
         {/* Redireciona qualquer rota inexistente para o login */}
         <Route path="*" element={<Navigate to="/" />} />
+
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

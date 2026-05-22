@@ -36,54 +36,128 @@ export function Modal({ isOpen, onClose, title, children }) {
 }
 
 // 2. Modal de Notificações
-export function NotificationModal({ isOpen, notifications = [] }) {
+const NotificationModal = ({
+  isOpen,
+  notifications = [],
+  onDecidir
+}) => {
+
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <S.Container
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    <div
+      style={{
+        position: 'absolute',
+        top: '55px',
+        right: '0',
+        width: '350px',
+        maxHeight: '400px',
+        overflowY: 'auto',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '15px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+        zIndex: 999
+      }}
+    >
+      <h3
+        style={{
+          marginBottom: '15px',
+          color: '#333'
+        }}
+      >
+        Notificações
+      </h3>
+
+      {notifications.length === 0 ? (
+
+        <p
+          style={{
+            color: '#777'
+          }}
         >
-          <S.Header>
-            Notificações
-            <span>{notifications.length}</span>
-          </S.Header>
-          <S.List>
-            {notifications.length > 0 ? (
-              notifications.map((notif) => (
-                <S.NotificationItem key={notif.id}>
-                  <div className="content-wrapper">
-                    <div className="text-section">
-                      <p>{notif.text}</p>
-                      <span>{notif.time}</span>
-                    </div>
-                    
-                    {notif.isQuiz && (
-                      <button 
-                        className="action-button"
-                        onClick={() => {
-                          console.log("Redirecionando para o quiz:", notif.quizId);
-                        }}
-                      >
-                        Fazer
-                      </button>
-                    )}
-                  </div>
-                </S.NotificationItem>
-              ))
-            ) : (
-              <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.8rem' }}>
-                Nenhuma notificação nova.
-              </div>
-            )}
-          </S.List>
-        </S.Container>
+          Nenhuma solicitação pendente.
+        </p>
+
+      ) : (
+
+        notifications.map((notif, index) => (
+
+          <div
+            key={`${notif.idAluno}-${notif.idTurma}-${index}`}
+            style={{
+              borderBottom: '1px solid #eee',
+              paddingBottom: '12px',
+              marginBottom: '12px'
+            }}
+          >
+            <p
+              style={{
+                marginBottom: '10px',
+                color: '#444',
+                fontSize: '14px',
+                lineHeight: '20px'
+              }}
+            >
+              {notif.mensagem}
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px'
+              }}
+            >
+              <button
+                onClick={() =>
+                  onDecidir(
+                    notif.idTurma,
+                    notif.idAluno,
+                    'APROVAR'
+                  )
+                }
+                style={{
+                  flex: 1,
+                  background: '#22c55e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Aprovar
+              </button>
+
+              <button
+                onClick={() =>
+                  onDecidir(
+                    notif.idTurma,
+                    notif.idAluno,
+                    'RECUSAR'
+                  )
+                }
+                style={{
+                  flex: 1,
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Recusar
+              </button>
+            </div>
+          </div>
+        ))
       )}
-    </AnimatePresence>
+    </div>
   );
-}
+};
 
 // 3. Modal de Perguntas
 export function QuestionModal({ title, isOpen, onClose, children }) {
@@ -117,7 +191,9 @@ export function QuestionModal({ title, isOpen, onClose, children }) {
   );
 }
 
-// 4. Modal de Revisão Pedagógica (Recuperado para a página ManagerTurma)
+
+
+// 5. Modal de Revisão Pedagógica (Recuperado para a página ManagerTurma)
 export function ReviewModal({ isOpen, onClose, quizTitle, children }) {
   return (
     <AnimatePresence>
@@ -155,7 +231,7 @@ export function ReviewModal({ isOpen, onClose, quizTitle, children }) {
   );
 }
 
-// 5. VARIANT: Modal Especializado com o Formulário de Pergunta
+// 6. VARIANT: Modal Especializado com o Formulário de Pergunta
 export function FormQuestionModal({
   isOpen,
   onClose,
@@ -223,7 +299,7 @@ export function FormQuestionModal({
   );
 }
 
-// 6. VARIANT: Modal Especializado para Agendamento e Seleção de Turma
+// 7. VARIANT: Modal Especializado para Agendamento e Seleção de Turma
 export function ScheduleQuizModal({
   isOpen,
   onClose,

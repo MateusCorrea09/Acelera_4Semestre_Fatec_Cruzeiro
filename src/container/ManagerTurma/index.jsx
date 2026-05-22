@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import InfoCard from '../../components/InfoCard';
-import { Modal, ReviewModal } from '../../components/Modal'; // Removidos os modais do CreateQuiz
+import { Modal, ReviewModal } from '../../components/Modal';
 import { MyButton } from '../../components/Buttons';
 import LCalendar from '../../components/LCalendar';
 import ResultBar from '../../components/ResultBar';
@@ -9,271 +9,675 @@ import * as S from './style';
 import { useNavigate } from 'react-router-dom';
 
 function ManagerTurma() {
+
   const navigate = useNavigate();
 
-  const [salasDoProfessor, setSalasDoProfessor] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [stats, setStats] = useState({ mediaGeral: '0%', quizMaisDificil: 'Nenhum', alunosAtivos: '0/0' });
-  const [quizzesDaTurma, setQuizzesDaTurma] = useState([]);
-  const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [quizPedagogicoData, setQuizPedagogicoData] = useState({ perguntaMaisFacil: '', perguntaMaisDificil: '', graficosPerguntas: [] });
+  // =========================================================
+  // STORAGE
+  // =========================================================
 
-  const [showClassModal, setShowClassModal] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showQuizDetailsModal, setShowQuizDetailsModal] = useState(false);
-  const [showMediaModal, setShowMediaModal] = useState(false);
-  const [showParticipacaoModal, setShowParticipacaoModal] = useState(false);
+  const idProfessorLogado =
+    localStorage.getItem('idUsuario');
+
+  // =========================================================
+  // HEADERS
+  // =========================================================
+
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    'x-professor-id': idProfessorLogado
+  };
+
+  // =========================================================
+  // STATES
+  // =========================================================
+
+  const [salasDoProfessor, setSalasDoProfessor] = useState([]);
+
+  const [selectedClass, setSelectedClass] = useState(null);
+
+  const [stats, setStats] = useState({
+    mediaGeral: '0%',
+    quizMaisDificil: 'Nenhum',
+    alunosAtivos: '0/0'
+  });
+
+  const [quizzesDaTurma, setQuizzesDaTurma] = useState([]);
+
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+
+  const [quizPedagogicoData, setQuizPedagogicoData] = useState({
+    perguntaMaisFacil: '',
+    perguntaMaisDificil: '',
+    graficosPerguntas: []
+  });
 
   const [detalhesAlunosTurma, setDetalhesAlunosTurma] = useState([]);
 
-  const idProfessorLogado = localStorage.getItem('idUsuario') || 1;
+  // =========================================================
+  // MODAIS
+  // =========================================================
 
-  // 1. Carrega as turmas do professor ao iniciar
+  const [showClassModal, setShowClassModal] = useState(false);
+
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const [showQuizDetailsModal, setShowQuizDetailsModal] = useState(false);
+
+  const [showMediaModal, setShowMediaModal] = useState(false);
+
+  const [showParticipacaoModal, setShowParticipacaoModal] = useState(false);
+
+  // =========================================================
+  // MENU
+  // =========================================================
+
+  const menuConfig = [
+    {
+      label: "Dashboard",
+      onClick: () => navigate('/home-professor')
+    },
+    {
+      label: "Atividade",
+      onClick: () => navigate('/criar-quiz')
+    },
+    {
+      label: "Minhas Salas",
+      onClick: () => navigate('/gerenciar-turmas')
+    },
+    {
+      label: "Relatórios",
+      onClick: () => navigate('/relatorios')
+    },
+    {
+      label: "Sair",
+      onClick: () => {
+        localStorage.clear();
+        navigate('/');
+      }
+    },
+  ];
+
+  // =========================================================
+  // BUSCAR TURMAS
+  // =========================================================
+
   useEffect(() => {
-    fetch(`http://localhost:3001/turmas-professor/${idProfessorLogado}`)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Salas recebidas do banco:", data);
-        if (data && data.length > 0) {
-          setSalasDoProfessor(data);
-          setSelectedClass(data[0]); 
-          
-          // AJUSTE AQUI: Salva a turma inicial padrão no localStorage
-          const idInicial = data[0].IDTURMA || data[0].id;
-          localStorage.setItem('idTurmaAtiva', idInicial);
+
+    if (!idProfessorLogado) {
+      console.error("❌ Professor não encontrado");
+      return;
+    }
+
+    fetch(
+      `http://localhost:3001/turmas-professor/${idProfessorLogado}`,
+      {
+        method: 'GET',
+        headers: requestHeaders
+      }
+    )
+      .then(async (res) => {
+
+        if (!res.ok) {
+          throw new Error(`Erro HTTP ${res.status}`);
         }
-      })
-      .catch(err => console.error("Erro ao buscar turmas no Front:", err));
-  }, [idProfessorLogado]);
 
-  // 2. Carrega as estatísticas e quizzes da turma selecionada
+        return res.json();
+      })
+      .then((data) => {
+
+        console.log("📚 Turmas:", data);
+
+        if (Array.isArray(data) && data.length > 0) {
+
+          setSalasDoProfessor(data);
+
+          setSelectedClass(data[0]);
+
+          localStorage.setItem(
+            'idTurmaAtiva',
+            data[0].id
+          );
+        }
+
+      })
+      .catch((err) => {
+        console.error("❌ Erro turmas:", err);
+      });
+
+  }, []);
+
+  // =========================================================
+  // CARREGA DADOS DA TURMA
+  // =========================================================
+
   useEffect(() => {
-    const turmaId = selectedClass?.IDTURMA || selectedClass?.id;
-    if (!turmaId) return;
 
-    fetch(`http://localhost:3001/turma-stats/${turmaId}`)
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(err => console.error("Erro nas estatísticas:", err));
+    if (!selectedClass?.id) return;
 
-    fetch(`http://localhost:3001/turma-quizzes/${turmaId}`)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Quizzes recebidos para essa sala:", data);
-        setQuizzesDaTurma(data || []);
+    const turmaId = selectedClass.id;
+
+    console.log("📘 Carregando turma:", turmaId);
+
+    // =====================================================
+    // STATS
+    // =====================================================
+
+    fetch(
+      `http://localhost:3001/turma-stats/${turmaId}`,
+      {
+        method: 'GET',
+        headers: requestHeaders
+      }
+    )
+      .then(async (res) => {
+
+        if (!res.ok) {
+          throw new Error(`Erro stats ${res.status}`);
+        }
+
+        return res.json();
       })
-      .catch(err => console.error("Erro nos quizzes da turma:", err));
+      .then((data) => {
 
-    fetch(`http://localhost:3001/alunos?turmaId=${turmaId}`)
-      .then(res => res.json())
-      .then(data => setDetalhesAlunosTurma(data || []))
-      .catch(err => console.error("Erro ao buscar lista de alunos:", err));
+        console.log("📊 Stats:", data);
+
+        setStats({
+          mediaGeral: data.mediaGeral || '0%',
+          quizMaisDificil:
+            data.quizMaisDificil || 'Nenhum',
+          alunosAtivos:
+            data.alunosAtivos || '0/0'
+        });
+
+      })
+      .catch((err) => {
+        console.error("❌ Stats:", err);
+      });
+
+    // =====================================================
+    // QUIZZES
+    // =====================================================
+
+    fetch(
+      `http://localhost:3001/turma-quizzes/${turmaId}`,
+      {
+        method: 'GET',
+        headers: requestHeaders
+      }
+    )
+      .then(async (res) => {
+
+        if (!res.ok) {
+          throw new Error(`Erro quizzes ${res.status}`);
+        }
+
+        return res.json();
+      })
+      .then((data) => {
+
+        console.log("📝 Quizzes:", data);
+
+        setQuizzesDaTurma(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+
+      })
+      .catch((err) => {
+        console.error("❌ Quizzes:", err);
+      });
+
+    // =====================================================
+    // ALUNOS
+    // =====================================================
+
+    fetch(
+      `http://localhost:3001/alunos/turma/${turmaId}`,
+      {
+        method: 'GET',
+        headers: requestHeaders
+      }
+    )
+      .then(async (res) => {
+
+        if (!res.ok) {
+          throw new Error(`Erro alunos ${res.status}`);
+        }
+
+        return res.json();
+      })
+      .then((data) => {
+
+        console.log("👨‍🎓 Alunos:", data);
+
+        setDetalhesAlunosTurma(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+
+      })
+      .catch((err) => {
+        console.error("❌ Alunos:", err);
+      });
 
   }, [selectedClass]);
 
-  // 3. Carrega detalhes específicos gráficos do Quiz
-  const handleOpenQuizDetails = (quiz) => {
-    const turmaId = selectedClass?.IDTURMA || selectedClass?.id;
-    const quizId = quiz?.IDQUIZ_PK || quiz?.id;
+  // =========================================================
+  // DETALHES DO QUIZ
+  // =========================================================
 
-    if (!turmaId || !quizId) return;
+  const handleOpenQuizDetails = (quiz) => {
+
     setSelectedQuiz(quiz);
 
-    fetch(`http://localhost:3001/turma-quiz-detalhes/${turmaId}/${quizId}`)
-      .then(res => res.json())
-      .then(data => {
-        setQuizPedagogicoData(data);
-        setShowQuizDetailsModal(true);
-      })
-      .catch(err => console.error("Erro ao buscar analíticas do quiz:", err));
+    // Como ainda não existe rota pedagógica completa,
+    // simulamos os dados usando os resultados do quiz
+
+    setQuizPedagogicoData({
+      perguntaMaisFacil:
+        "Questão introdutória",
+      perguntaMaisDificil:
+        "Questão com menor média de acertos",
+      graficosPerguntas: [
+        {
+          label: 'Acertos',
+          percentage: quiz.mediaAcertos || 0
+        },
+        {
+          label: 'Erros',
+          percentage: 100 - (quiz.mediaAcertos || 0)
+        }
+      ]
+    });
+
+    setShowQuizDetailsModal(true);
   };
 
-  const alunosResponderam = detalhesAlunosTurma.filter(aluno => aluno.nota !== null && aluno.nota !== undefined && aluno.nota !== '');
-  const alunosPendentes = detalhesAlunosTurma.filter(aluno => !aluno.nota && aluno.nota !== 0);
+  // =========================================================
+  // FILTROS
+  // =========================================================
 
-  const menuConfig = [
-    { label: "Dashboard", onClick: () => navigate('/home-professor') },
-    { label: "Atividade", onClick: () => navigate('/criar-quiz') },
-    { label: "Minhas Salas", onClick: () => navigate('/gerenciar-turmas') },
-    { label: "Relatórios", onClick: () => navigate('/relatorios') },
-    { label: "Sair", onClick: () => { localStorage.clear(); navigate('/'); } },
-  ];
+  const alunosResponderam =
+    detalhesAlunosTurma.filter(
+      aluno =>
+        aluno.nota !== null &&
+        aluno.nota !== undefined &&
+        aluno.nota !== "---"
+    );
 
-  const nomeTurmaAtual = selectedClass?.NOMETURMA || selectedClass?.nome || "Selecione uma Sala";
+  const alunosPendentes =
+    detalhesAlunosTurma.filter(
+      aluno =>
+        aluno.nota === null ||
+        aluno.nota === undefined ||
+        aluno.nota === "---"
+    );
+
+  // =========================================================
+  // NOME TURMA
+  // =========================================================
+
+  const nomeTurmaAtual =
+    selectedClass?.nome ||
+    "Selecione uma Sala";
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
-    <DashboardLayout sidebarTitle="Professor" menuItems={menuConfig} userName="Prof. Fabiano">
+
+    <DashboardLayout
+      sidebarTitle="Professor"
+      menuItems={menuConfig}
+      userName={`Prof. ${
+        localStorage.getItem('userName')
+        || 'Professor'
+      }`}
+    >
+
       <S.Container>
+
+        {/* HEADER */}
+
         <S.Header>
-          <h1>Gerenciador de Turma - {nomeTurmaAtual}</h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <MyButton onClick={() => setShowClassModal(true)}>Selecionar Sala</MyButton>
-            <MyButton onClick={() => setShowCalendar(true)}>Filtrar por Período</MyButton>
+
+          <h1>
+            Gerenciador de Turma - {nomeTurmaAtual}
+          </h1>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px'
+            }}
+          >
+
+            <MyButton
+              onClick={() => setShowClassModal(true)}
+            >
+              Selecionar Sala
+            </MyButton>
+
+            <MyButton
+              onClick={() => setShowCalendar(true)}
+            >
+              Filtrar por Período
+            </MyButton>
+
           </div>
+
         </S.Header>
 
+        {/* CARDS */}
+
         <S.StatsGrid>
+
           <InfoCard
             title="Média de Acertos da Sala"
             value={stats.mediaGeral}
             footerText="Desempenho geral"
             onClick={() => setShowMediaModal(true)}
           />
+
           <InfoCard
             title="Quiz com menor desempenho"
-            value={stats.quizMaisDificil === "Nenhum" ? "---" : stats.quizMaisDificil}
-            footerText="Requer attention"
-            onClick={() => {
-              if (quizzesDaTurma.length > 0) {
-                const piorQuiz = quizzesDaTurma.find(q => q.titulo === stats.quizMaisDificil);
-                if (piorQuiz) handleOpenQuizDetails(piorQuiz);
-              }
-            }}
+            value={stats.quizMaisDificil}
+            footerText="Requer atenção"
           />
+
           <InfoCard
-            title="Participação Mensal"
+            title="Participação"
             value={stats.alunosAtivos}
-            footerText="Alunos que responderam"
+            footerText="Alunos ativos"
             onClick={() => setShowParticipacaoModal(true)}
           />
+
         </S.StatsGrid>
 
+        {/* QUIZZES */}
+
         <S.ContentSection>
-          <S.SectionTitle>Desempenho por Quiz</S.SectionTitle>
+
+          <S.SectionTitle>
+            Desempenho por Quiz
+          </S.SectionTitle>
+
           <S.Table>
+
             <thead>
               <tr>
-                <th>Nome do Quiz</th>
-                <th>Data</th>
-                <th>Média de Acertos</th>
+                <th>Quiz</th>
+                <th>PIN</th>
+                <th>Média</th>
                 <th>Ações</th>
               </tr>
             </thead>
+
             <tbody>
+
               {quizzesDaTurma.length === 0 ? (
+
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                    Nenhum histórico de quiz encontrado para esta sala.
+
+                  <td
+                    colSpan="4"
+                    style={{
+                      textAlign: 'center',
+                      padding: '20px'
+                    }}
+                  >
+                    Nenhum quiz encontrado.
                   </td>
+
                 </tr>
+
               ) : (
-                quizzesDaTurma.map((quiz, index) => (
-                  <tr key={index}>
+
+                quizzesDaTurma.map((quiz) => (
+
+                  <tr key={quiz.id}>
+
                     <td>{quiz.titulo}</td>
-                    <td>{quiz.dataConclusao || 'Sem data'}</td>
-                    <td>{quiz.mediaAcertos}%</td>
+
+                    <td>{quiz.pin}</td>
+
                     <td>
-                      <MyButton onClick={() => handleOpenQuizDetails(quiz)}>
+                      {quiz.mediaAcertos || 0}%
+                    </td>
+
+                    <td>
+
+                      <MyButton
+                        onClick={() =>
+                          handleOpenQuizDetails(quiz)
+                        }
+                      >
                         Ver Estatísticas
                       </MyButton>
+
                     </td>
+
                   </tr>
+
                 ))
+
               )}
+
             </tbody>
+
           </S.Table>
+
         </S.ContentSection>
 
-        {/* --- 1. MODAL SELECIONAR SALA --- */}
-        {showClassModal && (
-          <Modal title="Selecionar Sala" isOpen={showClassModal} onClose={() => setShowClassModal(false)}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px' }}>
-              {salasDoProfessor.map((sala) => (
-                <MyButton 
-                  key={sala.IDTURMA || sala.id} 
-                  onClick={() => { 
-                    setSelectedClass(sala); 
-                    
-                    // AJUSTE AQUI: Salva o novo ID selecionado no localStorage antes de fechar o modal
-                    const idSelecionado = sala.IDTURMA || sala.id;
-                    localStorage.setItem('idTurmaAtiva', idSelecionado);
-                    
-                    setShowClassModal(false); 
-                  }}
-                  style={{ justifyContent: 'left', backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd' }}
-                >
-                  📁 {sala.NOMETURMA || sala.nome}
-                </MyButton>
-              ))}
-            </div>
-          </Modal>
-        )}
+        {/* MODAL TURMAS */}
 
-        {/* --- 2. MODAL DE REVISÃO DO DESEMPENHO DO QUIZ --- */}
+        <Modal
+          title="Selecionar Sala"
+          isOpen={showClassModal}
+          onClose={() => setShowClassModal(false)}
+        >
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}
+          >
+
+            {salasDoProfessor.map((sala) => (
+
+              <MyButton
+                key={sala.id}
+                onClick={() => {
+
+                  setSelectedClass(sala);
+
+                  localStorage.setItem(
+                    'idTurmaAtiva',
+                    sala.id
+                  );
+
+                  setShowClassModal(false);
+                }}
+              >
+                📁 {sala.nome}
+              </MyButton>
+
+            ))}
+
+          </div>
+
+        </Modal>
+
+        {/* MODAL DETALHES QUIZ */}
+
         <ReviewModal
           isOpen={showQuizDetailsModal}
-          onClose={() => setShowQuizDetailsModal(false)}
-          quizTitle={selectedQuiz ? selectedQuiz.titulo : ""}
+          onClose={() =>
+            setShowQuizDetailsModal(false)
+          }
+          quizTitle={selectedQuiz?.titulo || ""}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div style={{ padding: '15px', backgroundColor: '#eafaf1', borderRadius: '8px', borderLeft: '5px solid #2ecc71' }}>
-                <strong style={{ color: '#27ae60', fontSize: '0.9rem' }}>💡 Maior índice de acerto:</strong>
-                <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#333' }}>{quizPedagogicoData.perguntaMaisFacil || "Nenhum dado"}</p>
-              </div>
-              <div style={{ padding: '15px', backgroundColor: '#fdf2f2', borderRadius: '8px', borderLeft: '5px solid #e74c3c' }}>
-                <strong style={{ color: '#c0392b', fontSize: '0.9rem' }}>⚠️ Maior índice de erro:</strong>
-                <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#333' }}>{quizPedagogicoData.perguntaMaisDificil || "Nenhum dado"}</p>
-              </div>
-            </div>
 
-            <hr style={{ border: '0', borderTop: '1px solid #eee', margin: '10px 0' }} />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}
+          >
 
             <div>
-              <h3 style={{ fontSize: '1rem', marginBottom: '15px', color: '#555' }}>Média de Acertos por Questão:</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {quizPedagogicoData.graficosPerguntas && quizPedagogicoData.graficosPerguntas.map((progresso, idx) => (
-                  <ResultBar
-                    key={idx}
-                    label={progresso.label}
-                    percentage={progresso.percentage}
-                    color={progresso.percentage < 50 ? '#e67e3a' : '#2ecc71'}
-                  />
-                ))}
-              </div>
+
+              <strong>
+                💡 Pergunta mais fácil:
+              </strong>
+
+              <p>
+                {quizPedagogicoData.perguntaMaisFacil}
+              </p>
+
             </div>
+
+            <div>
+
+              <strong>
+                ⚠️ Pergunta mais difícil:
+              </strong>
+
+              <p>
+                {quizPedagogicoData.perguntaMaisDificil}
+              </p>
+
+            </div>
+
+            <div>
+
+              {quizPedagogicoData
+                .graficosPerguntas
+                ?.map((item, index) => (
+
+                  <ResultBar
+                    key={index}
+                    label={item.label}
+                    percentage={item.percentage}
+                  />
+
+                ))}
+
+            </div>
+
           </div>
+
         </ReviewModal>
 
-        {/* --- 3. MODAL DE MÉDIAS DA SALA --- */}
-        {showMediaModal && (
-          <Modal title="Detalhes de Notas da Sala" isOpen={showMediaModal} onClose={() => setShowMediaModal(false)}>
-            <div style={{ padding: '10px' }}>
-              <h4>Notas dos alunos ativos:</h4>
-              <ul>
-                {alunosResponderam.map((aluno, i) => (
-                  <li key={i}>{aluno.nome || aluno.NOME}: <strong>{aluno.nota}% de acertos</strong></li>
-                ))}
-              </ul>
-            </div>
-          </Modal>
-        )}
+        {/* MODAL MÉDIAS */}
 
-        {/* --- 4. MODAL DE PARTICIPAÇÃO --- */}
-        {showParticipacaoModal && (
-          <Modal title="Lista de Participação" isOpen={showParticipacaoModal} onClose={() => setShowParticipacaoModal(false)}>
-            <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <h4 style={{ color: '#2ecc71' }}>Responderam ({alunosResponderam.length}):</h4>
-                {alunosResponderam.map((a, i) => <span key={i} style={{ display: 'block' }}>✔️ {a.nome || a.NOME}</span>)}
-              </div>
-              <div>
-                <h4 style={{ color: '#e74c3c' }}>Pendentes ({alunosPendentes.length}):</h4>
-                {alunosPendentes.map((a, i) => <span key={i} style={{ display: 'block' }}>⏳ {a.nome || a.NOME}</span>)}
-              </div>
-            </div>
-          </Modal>
-        )}
+        <Modal
+          title="Notas da Sala"
+          isOpen={showMediaModal}
+          onClose={() => setShowMediaModal(false)}
+        >
 
-        {/* --- 5. COMPONENTE DE CALENDÁRIO --- */}
-        {showCalendar && (
-          <Modal title="Filtrar por Período" isOpen={showCalendar} onClose={() => setShowCalendar(false)}>
-            <LCalendar onChange={(range) => console.log("Filtro aplicado:", range)} />
-          </Modal>
-        )}
+          <div style={{ padding: '10px' }}>
+
+            {alunosResponderam.length === 0 ? (
+
+              <p>
+                Nenhum aluno respondeu quizzes.
+              </p>
+
+            ) : (
+
+              alunosResponderam.map((aluno) => (
+
+                <p key={aluno.id}>
+                  {aluno.nome} — {aluno.nota}
+                </p>
+
+              ))
+
+            )}
+
+          </div>
+
+        </Modal>
+
+        {/* MODAL PARTICIPAÇÃO */}
+
+        <Modal
+          title="Participação"
+          isOpen={showParticipacaoModal}
+          onClose={() =>
+            setShowParticipacaoModal(false)
+          }
+        >
+
+          <div style={{ padding: '10px' }}>
+
+            <h3>✔️ Responderam</h3>
+
+            {alunosResponderam.length === 0 ? (
+
+              <p>Nenhum aluno.</p>
+
+            ) : (
+
+              alunosResponderam.map((aluno) => (
+
+                <p key={aluno.id}>
+                  {aluno.nome}
+                </p>
+
+              ))
+
+            )}
+
+            <h3 style={{ marginTop: '20px' }}>
+              ⏳ Pendentes
+            </h3>
+
+            {alunosPendentes.length === 0 ? (
+
+              <p>Nenhum aluno pendente.</p>
+
+            ) : (
+
+              alunosPendentes.map((aluno) => (
+
+                <p key={aluno.id}>
+                  {aluno.nome}
+                </p>
+
+              ))
+
+            )}
+
+          </div>
+
+        </Modal>
+
+        {/* MODAL CALENDÁRIO */}
+
+        <Modal
+          title="Filtrar por Período"
+          isOpen={showCalendar}
+          onClose={() => setShowCalendar(false)}
+        >
+
+          <LCalendar />
+
+        </Modal>
 
       </S.Container>
+
     </DashboardLayout>
+
   );
 }
 

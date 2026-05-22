@@ -1,62 +1,92 @@
-import styled from "styled-components";
+import styled from 'styled-components';
+
+// ========================================
+// CONTAINER
+// ========================================
 
 export const Container = styled.div`
- 
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  padding: 100px;
-  background-color: #FFF9F5; 
+  width: 100%;
   min-height: 100vh;
 
-  h1 { 
-    color: #FF8C42; 
-    font-size: 32px;
-    margin-bottom: 20px;
-  }
-`
-export const Form = styled.form`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+`;
+
+// ========================================
+// CONTENT
+// ========================================
+
+export const Content = styled.div`
+  width: 100%;
+  max-width: 500px;
+
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  align-self: center;
-  background: white;
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(255, 140, 66, 0.1);
+  gap: 20px;
 `;
+
+// ========================================
+// INPUT
+// ========================================
+
 export const Input = styled.input`
-  border: 1px solid #ffe3d1;
-  border-radius: 30px;
-  height: 40px;
-  background-color: #ffe3d1;
-  color: #291b11;
-  font-size: 16px;
-  padding-left:10px;
+  width: 100%;
+  padding: 14px;
+
+  border-radius: 10px;
+  border: 1px solid #ccc;
+
+  margin-bottom: 15px;
+
+  font-size: 1rem;
+
   outline: none;
-`
-export const Card = styled.div`
-display: flex;
-justify-content: space-between;
-background-color: #ffe3d1;
-margin: 10px;
-padding: 10px;
-width: 400px;
-border-radius: 10px;
- & p{
-    margin: 5px 0;
-    color: #ffffff;
-    font-weight: bold;
-    & span{ 
-      font-weight: normal;
-    }
+
+  transition: 0.2s;
+
+  &:focus {
+    border-color: #4f46e5;
   }
-  & button{
-      background-color: transparent;
-      border: none;
-      cursor: pointer;
-    }
-  & button:hover{
-      opacity: 0.8;
-    }
-`
+`;
+
+// ========================================
+// SELECT
+// ========================================
+
+export const Select = styled.select`
+  width: 100%;
+  padding: 14px;
+
+  border-radius: 10px;
+  border: 1px solid #ccc;
+
+  margin-bottom: 20px;
+
+  font-size: 1rem;
+
+  background: white;
+
+  outline: none;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+
+  &:focus {
+    border-color: #4f46e5;
+  }
+`;
+
+// ========================================
+// TEXTO INFORMATIVO
+// ========================================
+
+export const InfoText = styled.p`
+  font-size: 0.95rem;
+  color: #666;
+
+  margin-bottom: 15px;
+`;
