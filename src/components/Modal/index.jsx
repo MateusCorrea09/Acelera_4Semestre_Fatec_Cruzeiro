@@ -36,11 +36,12 @@ export function Modal({ isOpen, onClose, title, children }) {
 }
 
 // 2. Modal de Notificações
-const NotificationModal = ({
+
+export function NotificationModal({
   isOpen,
   notifications = [],
   onDecidir
-}) => {
+}) {
 
   if (!isOpen) return null;
 
@@ -157,7 +158,7 @@ const NotificationModal = ({
       )}
     </div>
   );
-};
+}
 
 // 3. Modal de Perguntas
 export function QuestionModal({ title, isOpen, onClose, children }) {
