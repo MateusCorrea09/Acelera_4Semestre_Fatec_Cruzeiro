@@ -8,19 +8,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ============================================================================
-// CONSTANTES
-// ============================================================================
-
 const PERFIS = {
     PROFESSOR: 1,
     ALUNO: 2
 };
-
-// ============================================================================
-// MIDDLEWARE PROFESSOR
-// ============================================================================
-
 const somenteProfessor = (req, res, next) => {
 
     const idProfessorRaw =
@@ -72,11 +63,6 @@ const somenteProfessor = (req, res, next) => {
         next();
     });
 };
-
-// ============================================================================
-// LOGIN
-// ============================================================================
-
 app.post('/login', (req, res) => {
 
     const { email } = req.body;
@@ -114,13 +100,7 @@ app.post('/login', (req, res) => {
         });
     });
 });
-
-// ============================================================================
-// TURMAS PROFESSOR
-// ============================================================================
-
-app.get(
-    '/turmas-professor/:idProfessor',
+app.get('/turmas-professor/:idProfessor',
     somenteProfessor,
     (req, res) => {
 
@@ -153,13 +133,7 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// LISTAR CONTAINERS
-// ============================================================================
-
-app.get(
-    '/containers/professor/:idProfessor',
+app.get('/containers/professor/:idProfessor',
     somenteProfessor,
     (req, res) => {
 
@@ -191,13 +165,7 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// CRIAR CONTAINER
-// ============================================================================
-
-app.post(
-    '/containers',
+app.post('/containers',
     somenteProfessor,
     (req, res) => {
 
@@ -250,13 +218,7 @@ app.post(
         );
     }
 );
-
-// ============================================================================
-// ATUALIZAR CONTAINER
-// ============================================================================
-
-app.put(
-    '/containers/:idContainer',
+app.put('/containers/:idContainer',
     somenteProfessor,
     (req, res) => {
 
@@ -302,13 +264,7 @@ app.put(
         );
     }
 );
-
-// ============================================================================
-// LISTAR PERGUNTAS DO CONTAINER
-// ============================================================================
-
-app.get(
-    '/containers/:idContainer/perguntas',
+app.get('/containers/:idContainer/perguntas',
     (req, res) => {
 
         const idContainer = parseInt(req.params.idContainer);
@@ -372,12 +328,7 @@ app.get(
         });
     }
 );
-// ============================================================================
-// CRIAR QUIZ
-// ============================================================================
-
-app.post(
-    '/criar-quiz',
+app.post('/criar-quiz',
     somenteProfessor,
     (req, res) => {
 
@@ -390,11 +341,6 @@ app.post(
             typeCriacao,
             quantidadePerguntasAuto
         } = req.body;
-
-        // =========================
-        // VALIDAÇÕES
-        // =========================
-
         if (!titulo || !titulo.trim()) {
 
             return res.status(400).json({
@@ -410,19 +356,9 @@ app.post(
                 error: "Professor inválido"
             });
         }
-
-        // =========================
-        // GERAR PIN
-        // =========================
-
         const pin = Math.floor(
             100000 + Math.random() * 900000
         ).toString();
-
-        // =========================
-        // CRIAR QUIZ
-        // =========================
-
         const sqlQuiz = `
             INSERT INTO QUIZ (
                 IDCRIADOR_FK,
@@ -446,7 +382,7 @@ app.post(
                 if (err) {
 
                     console.error(
-                        "❌ Erro criar quiz:",
+                        " Erro criar quiz:",
                         err.message
                     );
 
@@ -455,18 +391,11 @@ app.post(
                         error: err.message
                     });
                 }
-
                 const idQuiz = this.lastID;
-
                 console.log(
-                    "✅ Quiz criado:",
+                    "Quiz criado:",
                     idQuiz
                 );
-
-                // ====================================================
-                // QUIZ MANUAL
-                // ====================================================
-
                 if (
                     typeCriacao === 'manual' &&
                     perguntas &&
@@ -474,11 +403,6 @@ app.post(
                 ) {
 
                     perguntas.forEach((p) => {
-
-                        // =====================================
-                        // CRIA PERGUNTA
-                        // =====================================
-
                         const sqlPergunta = `
                             INSERT INTO PERGUNTA (
                                 IDPROFESSOR_FK,
@@ -507,11 +431,6 @@ app.post(
 
                                 const idPergunta =
                                     this.lastID;
-
-                                // =====================================
-                                // RELACIONA QUIZ ↔ PERGUNTA
-                                // =====================================
-
                                 db.run(
                                     `
                                     INSERT INTO QUIZ_PERGUNTA (
@@ -534,11 +453,6 @@ app.post(
                                         }
                                     }
                                 );
-
-                                // =====================================
-                                // ALTERNATIVAS
-                                // =====================================
-
                                 if (
                                     p.alternativas &&
                                     p.alternativas.length > 0
@@ -590,11 +504,6 @@ app.post(
                         );
                     });
                 }
-
-                // ====================================================
-                // QUIZ AUTOMÁTICO
-                // ====================================================
-
                 if (
                     typeCriacao === 'auto' &&
                     containers &&
@@ -661,11 +570,6 @@ app.post(
                         }
                     );
                 }
-
-                // ====================================================
-                // SUCESSO
-                // ====================================================
-
                 res.status(201).json({
                     success: true,
                     idQuiz,
@@ -675,12 +579,135 @@ app.post(
         );
     }
 );
-// ============================================================================
-// CRIAR PERGUNTA
-// ============================================================================
+app.put('/perguntas/:idPergunta',
+    somenteProfessor,
+    (req, res) => {
 
-app.post(
-    '/perguntas',
+        const idPergunta =
+            parseInt(req.params.idPergunta);
+
+        const {
+            enunciado,
+            alternativas,
+            correta
+        } = req.body;
+        if (!idPergunta || isNaN(idPergunta)) {
+
+            return res.status(400).json({
+                success: false,
+                error: 'ID da pergunta inválido'
+            });
+        }
+
+        if (!enunciado || !enunciado.trim()) {
+
+            return res.status(400).json({
+                success: false,
+                error: 'Enunciado obrigatório'
+            });
+        }
+        const sqlPergunta = `
+            UPDATE PERGUNTA
+            SET ENUNCIADO = ?
+            WHERE IDPERGUNTA_PK = ?
+        `;
+
+        db.run(
+            sqlPergunta,
+            [
+                enunciado.trim(),
+                idPergunta
+            ],
+            function (err) {
+
+                if (err) {
+
+                    console.error(
+                        '❌ Atualizar pergunta:',
+                        err.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err.message
+                    });
+                }
+                const sqlDelete = `
+                    DELETE FROM ALTERNATIVAS
+                    WHERE IDPERGUNTA_FK = ?
+                `;
+
+                db.run(
+                    sqlDelete,
+                    [idPergunta],
+                    (errDelete) => {
+
+                        if (errDelete) {
+
+                            console.error(
+                                '❌ Excluir alternativas:',
+                                errDelete.message
+                            );
+
+                            return res.status(500).json({
+                                success: false,
+                                error: errDelete.message
+                            });
+                        }
+                        const sqlAlternativa = `
+                            INSERT INTO ALTERNATIVAS (
+                                IDPERGUNTA_FK,
+                                ALTERNATIVA,
+                                ROTULO,
+                                CORRETA
+                            )
+                            VALUES (?, ?, ?, ?)
+                        `;
+
+                        alternativas.forEach(
+                            (texto, index) => {
+
+                                const rotulo =
+                                    String.fromCharCode(
+                                        65 + index
+                                    );
+
+                                db.run(
+                                    sqlAlternativa,
+                                    [
+                                        idPergunta,
+                                        texto,
+                                        rotulo,
+                                        index === correta
+                                            ? 1
+                                            : 0
+                                    ],
+                                    (errAlt) => {
+
+                                        if (errAlt) {
+
+                                            console.error(
+                                                '❌ Alternativa:',
+                                                errAlt.message
+                                            );
+                                        }
+                                    }
+                                );
+                            }
+                        );
+
+                        return res.json({
+                            success: true,
+                            message:
+                                'Pergunta atualizada com sucesso'
+                        });
+                    }
+                );
+            }
+        );
+    }
+);
+app.post('/perguntas',
     somenteProfessor,
     (req, res) => {
 
@@ -772,13 +799,7 @@ app.post(
         );
     }
 );
-
-// ============================================================================
-// QUIZZES DA TURMA
-// ============================================================================
-
-app.get(
-    '/turma-quizzes/:idTurma',
+app.get('/turma-quizzes/:idTurma',
     (req, res) => {
 
         const idTurma = parseInt(req.params.idTurma);
@@ -831,13 +852,7 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// DETALHES QUIZ
-// ============================================================================
-
-app.get(
-    '/turma-quiz-detalhes/:idTurma/:idQuiz',
+app.get('/turma-quiz-detalhes/:idTurma/:idQuiz',
     (req, res) => {
 
         const idQuiz =
@@ -920,13 +935,7 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// ALUNOS DA TURMA
-// ============================================================================
-
-app.get(
-    '/alunos/turma/:idTurma',
+app.get('/alunos/turma/:idTurma',
     (req, res) => {
 
         const idTurma = parseInt(req.params.idTurma);
@@ -1013,13 +1022,7 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// ESTATÍSTICAS DA TURMA
-// ============================================================================
-
-app.get(
-    '/turma-stats/:idTurma',
+app.get('/turma-stats/:idTurma',
     (req, res) => {
 
         const idTurma = parseInt(req.params.idTurma);
@@ -1104,11 +1107,6 @@ app.get(
         });
     }
 );
-
-// ============================================================================
-// LISTAR TODAS AS TURMAS
-// ============================================================================
-
 app.get('/turmas', (req, res) => {
 
     const sql = `
@@ -1137,10 +1135,6 @@ app.get('/turmas', (req, res) => {
         res.json(rows || []);
     });
 });
-// ============================================================================
-// CADASTRO USUÁRIO
-// ============================================================================
-
 app.post('/registro', (req, res) => {
 
     const {
@@ -1151,11 +1145,6 @@ app.post('/registro', (req, res) => {
         ra,
         idTurma
     } = req.body;
-
-    // =====================================================
-    // VALIDAÇÕES
-    // =====================================================
-
     if (!nome || !email || !senha) {
 
         return res.status(400).json({
@@ -1163,11 +1152,6 @@ app.post('/registro', (req, res) => {
             error: "Campos obrigatórios"
         });
     }
-
-    // =====================================================
-    // CRIAR USUÁRIO
-    // =====================================================
-
     const sqlUsuario = `
         INSERT INTO USUARIO (
             NOME,
@@ -1200,13 +1184,7 @@ app.post('/registro', (req, res) => {
                     error: err.message
                 });
             }
-
             const idUsuario = this.lastID;
-
-            // =====================================================
-            // ALUNO
-            // =====================================================
-
             if (Number(tipoUsuario) === 2) {
 
                 const sqlAluno = `
@@ -1237,11 +1215,6 @@ app.post('/registro', (req, res) => {
                                 error: err.message
                             });
                         }
-
-                        // =====================================================
-                        // VINCULAR TURMA
-                        // =====================================================
-
                         const sqlTurma = `
                             INSERT INTO ALUNOS_TURMA (
                                 IDTURMA_PK_FK,
@@ -1292,13 +1265,7 @@ app.post('/registro', (req, res) => {
         }
     );
 });
-
-// ============================================================================
-// NOTIFICAÇÕES PENDENTES
-// ============================================================================
-
-app.get(
-    '/professor/:idProfessor/notificacoes-pendentes',
+app.get('/professor/:idProfessor/notificacoes-pendentes',
     (req, res) => {
 
         const idProfessor =
@@ -1363,13 +1330,7 @@ app.get(
         );
     }
 );
-
-// ============================================================================
-// DECIDIR SOLICITAÇÃO
-// ============================================================================
-
-app.put(
-    '/turmas/decidir-solicitacao',
+app.put('/turmas/decidir-solicitacao',
     (req, res) => {
 
         const {
@@ -1424,11 +1385,269 @@ app.put(
         );
     }
 );
+app.get('/quizzes-professor/:idProfessor',
+    somenteProfessor,
+    (req, res) => {
 
-// ============================================================================
-// ROOT
-// ============================================================================
+        const idProfessor =
+            parseInt(req.params.idProfessor);
 
+        const sql = `
+            SELECT
+
+                Q.IDQUIZ_PK AS id,
+
+                Q.TITULO AS titulo,
+
+                Q.CODIGO_PIN AS pin,
+
+                T.NOMETURMA AS turma
+
+            FROM QUIZ Q
+
+            LEFT JOIN TURMAS T
+                ON T.IDTURMA = Q.IDTURMA_FK
+
+            WHERE Q.IDCRIADOR_FK = ?
+
+            ORDER BY Q.IDQUIZ_PK DESC
+        `;
+
+        db.all(sql, [idProfessor], (err, rows) => {
+
+            if (err) {
+
+                console.error(
+                    "❌ Erro listar quizzes:",
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+
+            res.json(rows || []);
+        });
+    }
+);
+app.put('/quiz/:idQuiz',
+    somenteProfessor,
+    (req, res) => {
+
+        const idQuiz =
+            parseInt(req.params.idQuiz);
+
+        const {
+            titulo,
+            idTurma
+        } = req.body;
+
+        if (!titulo || !titulo.trim()) {
+
+            return res.status(400).json({
+                success: false,
+                error: "Título obrigatório"
+            });
+        }
+
+        const sql = `
+            UPDATE QUIZ
+            SET
+                TITULO = ?,
+                IDTURMA_FK = ?
+            WHERE IDQUIZ_PK = ?
+        `;
+
+        db.run(
+            sql,
+            [
+                titulo.trim(),
+                idTurma,
+                idQuiz
+            ],
+            function (err) {
+
+                if (err) {
+
+                    console.error(
+                        "❌ Atualizar quiz:",
+                        err.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err.message
+                    });
+                }
+
+                res.json({
+                    success: true,
+                    rowsAffected: this.changes
+                });
+            }
+        );
+    }
+);
+app.delete('/containers/:idContainer',
+    somenteProfessor,
+    (req, res) => {
+
+        const idContainer =
+            parseInt(req.params.idContainer);
+        const sqlAlternativas = `
+            DELETE FROM ALTERNATIVAS
+            WHERE IDPERGUNTA_FK IN (
+                SELECT IDPERGUNTA_PK
+                FROM PERGUNTA
+                WHERE IDCONTAINER_FK = ?
+            )
+        `;
+
+        db.run(sqlAlternativas, [idContainer], (err) => {
+
+            if (err) {
+
+                console.error(
+                    "❌ Excluir alternativas:",
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+            const sqlPerguntas = `
+                DELETE FROM PERGUNTA
+                WHERE IDCONTAINER_FK = ?
+            `;
+
+            db.run(sqlPerguntas, [idContainer], (err2) => {
+
+                if (err2) {
+
+                    console.error(
+                        "❌ Excluir perguntas:",
+                        err2.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err2.message
+                    });
+                }
+                const sqlContainer = `
+                    DELETE FROM CONTAINER_PERGUNTAS
+                    WHERE IDCONTAINER = ?
+                `;
+
+                db.run(
+                    sqlContainer,
+                    [idContainer],
+                    function (err3) {
+
+                        if (err3) {
+
+                            console.error(
+                                "❌ Excluir container:",
+                                err3.message
+                            );
+
+                            return res.status(500).json({
+                                success: false,
+                                error: err3.message
+                            });
+                        }
+
+                        res.json({
+                            success: true,
+                            rowsAffected: this.changes
+                        });
+                    }
+                );
+            });
+        });
+    }
+);
+app.delete('/quiz/:idQuiz',
+    somenteProfessor,
+    (req, res) => {
+
+        const idQuiz =
+            parseInt(req.params.idQuiz);
+        const sqlRelacoes = `
+            DELETE FROM QUIZ_PERGUNTA
+            WHERE IDQUIZ_PK_FK = ?
+        `;
+
+        db.run(sqlRelacoes, [idQuiz], (err) => {
+
+            if (err) {
+
+                console.error(
+                    "❌ Remover relações:",
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+            const sqlResultados = `
+                DELETE FROM RESULTADOS
+                WHERE IDQUIZ_FK = ?
+            `;
+
+            db.run(sqlResultados, [idQuiz], (err2) => {
+
+                if (err2) {
+
+                    console.error(
+                        "❌ Remover resultados:",
+                        err2.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err2.message
+                    });
+                }
+                const sqlQuiz = `
+                    DELETE FROM QUIZ
+                    WHERE IDQUIZ_PK = ?
+                `;
+
+                db.run(
+                    sqlQuiz,
+                    [idQuiz],
+                    function (err3) {
+
+                        if (err3) {
+
+                            console.error(
+                                "❌ Excluir quiz:",
+                                err3.message
+                            );
+
+                            return res.status(500).json({
+                                success: false,
+                                error: err3.message
+                            });
+                        }
+
+                        res.json({
+                            success: true,
+                            rowsAffected: this.changes
+                        });
+                    }
+                );
+            });
+        });
+    }
+);
 app.get('/', (req, res) => {
 
     res.json({
@@ -1436,21 +1655,10 @@ app.get('/', (req, res) => {
         message: "Servidor funcionando!"
     });
 });
-
-// ============================================================================
-// TESTE
-// ============================================================================
-
 app.get('/teste', (req, res) => {
     res.send("Servidor OK");
 });
-
-// ============================================================================
-// START
-// ============================================================================
-
 const PORT = 3001;
-
 app.listen(PORT, () => {
 
     console.log(`

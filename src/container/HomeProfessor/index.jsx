@@ -364,7 +364,12 @@ function HomeProfessor() {
       onClick: () =>
         navigate('/relatorios')
     },
-
+    
+    {
+      label: "TurmaStudents",
+      onClick: () =>
+        navigate('/TurmaStudents')
+    },
     {
       label: "Sair",
 
@@ -375,6 +380,7 @@ function HomeProfessor() {
         navigate('/');
       }
     }
+    
   ];
 
   // =========================================================================

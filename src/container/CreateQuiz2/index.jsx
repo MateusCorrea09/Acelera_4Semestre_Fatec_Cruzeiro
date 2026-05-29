@@ -8,224 +8,371 @@ import { useNavigate } from 'react-router-dom';
 function CreateQuiz2() {
 
   const navigate = useNavigate();
+
   const idProfessorLogado = Number(
     localStorage.getItem('idProfessor')
   );
 
-  console.log("ID PROFESSOR:", idProfessorLogado);
+  // =========================================================
+  // STATES
+  // =========================================================
 
-  // =========================
-  // ESTADOS
-  // =========================
+  const [creationMode, setCreationMode] = useState(null);
 
-  const [selectedContainerData, setSelectedContainerData] = useState(null);
-  const [containerDescription, setContainerDescription] = useState("");
-  const [questionsInContainer, setQuestionsInContainer] = useState([]);
-  const [editingQuestionId, setEditingQuestionId] = useState(null);
-  const [novoNomeContainer, setNovoNomeContainer] = useState("");
+  const [quizTitle, setQuizTitle] = useState('');
+
+  const [questions, setQuestions] = useState([]);
+
+  const [selectedContainers, setSelectedContainers] = useState([]);
 
   const [containersDoBanco, setContainersDoBanco] = useState([]);
-  const [loadingContainers, setLoadingContainers] = useState(true);
+
+  const [loadingContainers, setLoadingContainers] = useState(false);
+
+  const [quizzesProfessor, setQuizzesProfessor] = useState([]);
+
+  const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+
+  const [selectedContainerData, setSelectedContainerData] = useState(null);
+
+  const [novoNomeContainer, setNovoNomeContainer] = useState('');
+
+  const [containerDescription, setContainerDescription] = useState('');
+
+  const [questionsInContainer, setQuestionsInContainer] = useState([]);
+
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isContainerModalOpen, setIsContainerModalOpen] = useState(false);
+
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+
+  const [enunciado, setEnunciado] = useState('');
+
+  const [options, setOptions] = useState(['', '', '', '']);
+
+  const [correctOption, setCorrectOption] = useState(0);
 
   const [qtdPerguntas, setQtdPerguntas] = useState(5);
 
-  const [creationMode, setCreationMode] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [classes, setClasses] = useState([]);
 
-  const [quizTitle, setQuizTitle] = useState("");
-  const [questions, setQuestions] = useState([]);
-  const [selectedContainers, setSelectedContainers] = useState([]);
+  const [selectedTurmaId, setSelectedTurmaId] = useState('');
+
   const [dateRange, setDateRange] = useState(
     new Date().toISOString().split('T')[0]
   );
 
-  const [enunciado, setEnunciado] = useState("");
-  const [correctOption, setCorrectOption] = useState(0);
-  const [options, setOptions] = useState(["", "", "", ""]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [classes, setClasses] = useState([]);
-  const [selectedTurmaId, setSelectedTurmaId] = useState("");
-
-  // =========================
+  // =========================================================
   // HELPERS
-  // =========================
+  // =========================================================
 
   const getContainerId = (container) =>
     container?.id ||
-    container?.IDCONTAINER ||
-    container?.IDCONTAINER_PK;
+    container?.IDCONTAINER;
 
   const getContainerNome = (container) =>
     container?.nome ||
-    container?.NOMECONTAINER ||
     container?.NOME ||
-    "Container";
+    'Container';
 
   const getContainerDescricao = (container) =>
     container?.descricao ||
     container?.DESCRICAO ||
-    "Sem descrição informada.";
+    'Sem descrição';
 
-  const convertLabelToIndex = (label) => {
+  // =========================================================
+  // FETCH QUIZZES
+  // =========================================================
 
-    if (!label) return 0;
-
-    if (typeof label === 'number') return label;
-
-    const code = label.toUpperCase().charCodeAt(0);
-
-    return (code >= 65 && code <= 68)
-      ? code - 65
-      : 0;
-  };
-
-  // =========================
-  // BUSCAR TURMAS
-  // =========================
-
-  useEffect(() => {
-
-    fetch(`http://localhost:3001/turmas-professor/${idProfessorLogado}`)
-      .then(res => res.json())
-      .then(data => {
-
-        if (data && data.length > 0) {
-
-          setClasses(data);
-
-          const turmaAtivaSalva =
-            localStorage.getItem('idTurmaAtiva');
-
-          const existeNaLista = data.some(
-            c =>
-              String(c.IDTURMA || c.id)
-              ===
-              String(turmaAtivaSalva)
-          );
-
-          if (turmaAtivaSalva && existeNaLista) {
-
-            setSelectedTurmaId(turmaAtivaSalva);
-
-          } else {
-
-            setSelectedTurmaId(
-              data[0].IDTURMA || data[0].id || ""
-            );
-          }
-        }
-      })
-      .catch(err => {
-        console.error(err);
-      });
-
-  }, [idProfessorLogado]);
-
-  // =========================
-  // FETCH CONTAINERS
-  // =========================
-
-  const fetchContainers = useCallback(() => {
-
-    setLoadingContainers(true);
-
-    fetch(
-      `http://localhost:3001/containers/professor/${idProfessorLogado}`
-    )
-      .then(res => res.json())
-      .then(data => {
-
-        setContainersDoBanco(data || []);
-
-      })
-      .catch(err => {
-
-        console.error("Erro containers:", err);
-
-        setContainersDoBanco([]);
-
-      })
-      .finally(() => {
-
-        setLoadingContainers(false);
-
-      });
-
-  }, [idProfessorLogado]);
-
-  useEffect(() => {
-
-    fetchContainers();
-
-  }, [fetchContainers]);
-
-  // =========================
-  // ACESSAR CONTAINER
-  // =========================
-
-  const handleAcessarContainer = async (container) => {
-
-    const idContainer = getContainerId(container);
-
-    const nomeContainer = getContainerNome(container);
-
-    const descricaoContainer =
-      getContainerDescricao(container);
-
-    setSelectedContainerData({
-      ...container,
-      id: idContainer
-    });
-
-    setNovoNomeContainer(nomeContainer);
-
-    setContainerDescription(descricaoContainer);
+  const fetchQuizzesProfessor = useCallback(async () => {
 
     try {
 
+      setLoadingQuizzes(true);
+
       const response = await fetch(
-        `http://localhost:3001/containers/${idContainer}/perguntas`
+        `http://localhost:3001/quizzes-professor/${idProfessorLogado}`,
+        {
+          headers: {
+            'x-professor-id': idProfessorLogado
+          }
+        }
       );
 
-      let data = {};
+      const data = await response.json();
 
-      try {
-        data = await response.json();
-      } catch {
-        data = {
-          error: 'Resposta inválida do servidor'
-        };
-      }
-
-      setQuestionsInContainer(data || []);
+      setQuizzesProfessor(data || []);
 
     } catch (err) {
 
       console.error(err);
 
-      setQuestionsInContainer([]);
+      setQuizzesProfessor([]);
+
+    } finally {
+
+      setLoadingQuizzes(false);
+    }
+
+  }, [idProfessorLogado]);
+
+  // =========================================================
+  // FETCH CONTAINERS
+  // =========================================================
+
+  const fetchContainers = useCallback(async () => {
+
+    try {
+
+      setLoadingContainers(true);
+
+      const response = await fetch(
+        `http://localhost:3001/containers/professor/${idProfessorLogado}`,
+        {
+          headers: {
+            'x-professor-id': idProfessorLogado
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      setContainersDoBanco(data || []);
+
+    } catch (err) {
+
+      console.error(err);
+
+      setContainersDoBanco([]);
+
+    } finally {
+
+      setLoadingContainers(false);
+    }
+
+  }, [idProfessorLogado]);
+
+  // =========================================================
+  // FETCH TURMAS
+  // =========================================================
+
+  useEffect(() => {
+
+    fetch(
+      `http://localhost:3001/turmas-professor/${idProfessorLogado}`,
+      {
+        headers: {
+          'x-professor-id': idProfessorLogado
+        }
+      }
+    )
+      .then(res => res.json())
+      .then(data => {
+
+        setClasses(data || []);
+
+        if (data?.length > 0) {
+
+          setSelectedTurmaId(
+            data[0].id
+          );
+        }
+
+      })
+      .catch(console.error);
+
+  }, [idProfessorLogado]);
+
+  // =========================================================
+  // INITIAL LOAD
+  // =========================================================
+
+  useEffect(() => {
+
+    fetchContainers();
+
+    fetchQuizzesProfessor();
+
+  }, [fetchContainers, fetchQuizzesProfessor]);
+
+  // =========================================================
+  // MODAL HELPERS
+  // =========================================================
+
+  const resetQuestionModal = () => {
+
+    setEnunciado('');
+
+    setOptions(['', '', '', '']);
+
+    setCorrectOption(0);
+
+    setEditingIndex(null);
+
+    setEditingQuestionId(null);
+  };
+
+  const handleCloseQuestionModal = () => {
+
+    setIsModalOpen(false);
+
+    resetQuestionModal();
+
+    // Se estava editando pergunta de container,
+    // reabre o modal do container
+    if (selectedContainerData) {
+
+      setTimeout(() => {
+        setIsContainerModalOpen(true);
+      }, 150);
     }
   };
 
-  // =========================
-  // ATUALIZAR CONTAINER
-  // =========================
+  // =========================================================
+  // MANUAL QUIZ
+  // =========================================================
 
-  const handleAtualizarDadosContainer = async () => {
+  const handleOpenCreateQuestion = () => {
 
-    if (!selectedContainerData) return;
+    resetQuestionModal();
+
+    setIsModalOpen(true);
+  };
+
+  const handleSaveManualQuestion = async (e) => {
+
+    e.preventDefault();
+
+    try {
+
+      // =====================================================
+      // EDITANDO PERGUNTA EXISTENTE
+      // =====================================================
+
+      if (editingQuestionId) {
+
+        const response = await fetch(
+          `http://localhost:3001/perguntas/${editingQuestionId}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-professor-id': idProfessorLogado
+            },
+            body: JSON.stringify({
+              enunciado,
+              alternativas: options,
+              correta: correctOption
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+          alert(data.error || 'Erro ao atualizar');
+
+          return;
+        }
+
+        // ============================================
+        // ATUALIZA LISTA LOCAL
+        // ============================================
+
+        setQuestionsInContainer(prev =>
+          prev.map(q => {
+
+            if (q.id !== editingQuestionId) {
+              return q;
+            }
+
+            return {
+              ...q,
+              enunciado,
+              A: options[0],
+              B: options[1],
+              C: options[2],
+              D: options[3],
+              correta:
+                ['A', 'B', 'C', 'D'][correctOption]
+            };
+          })
+        );
+
+        handleCloseQuestionModal();
+
+        return;
+      }
+
+      // =====================================================
+      // CRIAÇÃO MANUAL
+      // =====================================================
+
+      const questionData = {
+
+        enunciado,
+
+        alternativas: options,
+
+        correta: correctOption
+      };
+
+      if (editingIndex !== null) {
+
+        const updated = [...questions];
+
+        updated[editingIndex] = questionData;
+
+        setQuestions(updated);
+
+      } else {
+
+        setQuestions(prev => [
+          ...prev,
+          questionData
+        ]);
+      }
+
+      handleCloseQuestionModal();
+
+    } catch (err) {
+
+      console.error(err);
+
+      alert('Erro ao salvar pergunta');
+    }
+  };
+
+  // =========================================================
+  // CONTAINER
+  // =========================================================
+
+  const handleSalvarContainer = async () => {
+
+    if (!novoNomeContainer.trim()) {
+
+      alert('Digite um nome para o container');
+
+      return;
+    }
 
     try {
 
       const response = await fetch(
-        `http://localhost:3001/containers/${selectedContainerData.id}`,
+        'http://localhost:3001/containers',
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-professor-id': idProfessorLogado
           },
           body: JSON.stringify({
             nome: novoNomeContainer,
@@ -235,173 +382,193 @@ function CreateQuiz2() {
         }
       );
 
+      const data = await response.json();
+
       if (response.ok) {
 
-        alert("Container atualizado!");
+        alert('Container criado!');
+
+        setNovoNomeContainer('');
+
+        setContainerDescription('');
 
         fetchContainers();
 
-        setSelectedContainerData(null);
+      } else {
+
+        alert(data.error || 'Erro ao criar container');
       }
 
     } catch (err) {
 
       console.error(err);
+
+      alert('Erro ao criar container');
     }
   };
 
-  // =========================
-  // FECHAR MODAL
-  // =========================
+  // =========================================================
+  // ABRIR CONTAINER
+  // =========================================================
 
-  const handleCloseQuestionModal = () => {
-
-    setIsModalOpen(false);
-
-    setEditingIndex(null);
-
-    setEditingQuestionId(null);
-
-    setEnunciado("");
-
-    setOptions(["", "", "", ""]);
-
-    setCorrectOption(0);
-  };
-
-  // =========================
-  // SALVAR QUESTÃO CONTAINER
-  // =========================
-
-  const handleSaveContainerQuestion = async (e) => {
-
-    e.preventDefault();
-
-    if (!selectedContainerData) return;
-
-    const isEdicao =
-      editingQuestionId !== null;
-
-    const url = isEdicao
-      ? `http://localhost:3001/perguntas/${editingQuestionId}`
-      : `http://localhost:3001/perguntas`;
-
-    const payload = {
-      idProfessor: idProfessorLogado,
-      idContainer: selectedContainerData.id,
-      enunciado,
-      alternativas: options,
-      rotuloCorreto:
-        String.fromCharCode(65 + correctOption)
-    };
+  const handleAcessarContainer = async (container) => {
 
     try {
 
-      const response = await fetch(url, {
+      const idContainer = getContainerId(container);
 
-        method: isEdicao ? 'PUT' : 'POST',
+      setSelectedContainerData(container);
 
-        headers: {
-          'Content-Type': 'application/json'
-        },
+      const response = await fetch(
+        `http://localhost:3001/containers/${idContainer}/perguntas`
+      );
 
-        body: JSON.stringify(payload)
-      });
+      const data = await response.json();
+
+      console.log(data);
+
+      setQuestionsInContainer(data || []);
+
+      setIsContainerModalOpen(true);
+
+    } catch (err) {
+
+      console.error(err);
+
+      alert('Erro ao carregar perguntas');
+
+      setQuestionsInContainer([]);
+    }
+  };
+
+  // =========================================================
+  // EXCLUIR PERGUNTA
+  // =========================================================
+
+  const handleDeleteQuestion = async (idPergunta) => {
+
+    const confirmar = window.confirm(
+      'Deseja realmente excluir esta pergunta?'
+    );
+
+    if (!confirmar) return;
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:3001/perguntas/${idPergunta}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'x-professor-id': idProfessorLogado
+          }
+        }
+      );
 
       if (response.ok) {
 
-        alert("Pergunta salva!");
+        setQuestionsInContainer(prev =>
+          prev.filter(q => q.id !== idPergunta)
+        );
 
-        handleCloseQuestionModal();
+      } else {
 
-        handleAcessarContainer(selectedContainerData);
+        alert('Erro ao excluir pergunta');
       }
 
     } catch (err) {
 
       console.error(err);
+
+      alert('Erro ao excluir pergunta');
     }
   };
+  // =========================================================
+  // EXCLUIR CONTAINER
+  // =========================================================
 
-  // =========================
-  // QUIZ MANUAL
-  // =========================
+  const handleDeleteContainer = async (idContainer) => {
 
-  const handleOpenCreate = () => {
+    const confirmar = window.confirm(
+      'Deseja realmente excluir este container?'
+    );
 
-    setEditingIndex(null);
+    if (!confirmar) return;
 
-    setEditingQuestionId(null);
+    try {
 
-    setEnunciado("");
+      const response = await fetch(
+        `http://localhost:3001/containers/${idContainer}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'x-professor-id': idProfessorLogado
+          }
+        }
+      );
 
-    setOptions(["", "", "", ""]);
+      const data = await response.json();
 
-    setCorrectOption(0);
+      if (response.ok) {
 
-    setIsModalOpen(true);
-  };
+        setContainersDoBanco(prev =>
+          prev.filter(
+            c => getContainerId(c) !== idContainer
+          )
+        );
 
-  const handleOpenEditManual = (index) => {
+        alert('Container excluído com sucesso');
 
-    const q = questions[index];
+      } else {
 
-    setEditingIndex(index);
+        alert(data.error || 'Erro ao excluir container');
+      }
 
-    setEnunciado(q.enunciado);
+    } catch (err) {
 
-    setOptions(q.alternativas);
+      console.error(err);
 
-    setCorrectOption(q.correta);
-
-    setIsModalOpen(true);
-  };
-
-  const handleOptionChange = (index, value) => {
-
-    const newOptions = [...options];
-
-    newOptions[index] = value;
-
-    setOptions(newOptions);
-  };
-
-  const handleSaveManualQuestion = (e) => {
-
-    e.preventDefault();
-
-    const questionData = {
-
-      enunciado,
-
-      alternativas: options,
-
-      correta: correctOption
-    };
-
-    if (editingIndex !== null) {
-
-      const updated = [...questions];
-
-      updated[editingIndex] = questionData;
-
-      setQuestions(updated);
-
-    } else {
-
-      setQuestions([...questions, questionData]);
+      alert('Erro ao excluir container');
     }
+  };
+  // =========================================================
+  // EDITAR PERGUNTA
+  // =========================================================
 
-    handleCloseQuestionModal();
+  const handleEditQuestion = (question) => {
+
+    setEditingQuestionId(question.id);
+
+    setEnunciado(question.enunciado);
+
+    setOptions([
+      question.A || '',
+      question.B || '',
+      question.C || '',
+      question.D || ''
+    ]);
+
+    const corretaIndex = ['A', 'B', 'C', 'D']
+      .indexOf(question.correta);
+
+    setCorrectOption(
+      corretaIndex >= 0 ? corretaIndex : 0
+    );
+
+    // FECHA O MODAL DO CONTAINER
+    setIsContainerModalOpen(false);
+
+    // ABRE O MODAL DA PERGUNTA
+    setTimeout(() => {
+      setIsModalOpen(true);
+    }, 150);
   };
 
-  // =========================
-  // SELEÇÃO CONTAINERS AUTO
-  // =========================
+  // =========================================================
+  // SELECT CONTAINER AUTO
+  // =========================================================
 
   const handleSelectContainerAuto = (idContainer) => {
-
-    if (!idContainer) return;
 
     setSelectedContainers(prev => {
 
@@ -414,110 +581,74 @@ function CreateQuiz2() {
     });
   };
 
-  // =========================
-  // SALVAR CONTAINER
-  // =========================
+  // =========================================================
+  // OPTION CHANGE
+  // =========================================================
 
-  const handleSalvarContainer = async () => {
-    try {
+  const handleOptionChange = (index, value) => {
 
-      const response = await fetch(
-        'http://localhost:3001/containers',
-        {
-          method: 'POST',
+    const updated = [...options];
 
-          headers: {
-            'Content-Type': 'application/json'
-          },
+    updated[index] = value;
 
-          body: JSON.stringify({
-            nome: novoNomeContainer,
-            descricao: containerDescription,
-            idProfessor: idProfessorLogado
-          })
-        }
-      );
-
-      if (response.ok) {
-
-        alert("Container criado!");
-
-        setNovoNomeContainer("");
-
-        setContainerDescription("");
-
-        fetchContainers();
-      }
-
-    } catch (err) {
-
-      console.error(err);
-    }
+    setOptions(updated);
   };
 
-  // =========================
-  // FINALIZAR QUIZ
-  // =========================
+  // =========================================================
+  // CREATE QUIZ
+  // =========================================================
 
   const handleFinishQuiz = async () => {
 
     if (!quizTitle.trim()) {
 
-      alert("Digite um título");
+      alert('Digite um título');
 
       return;
     }
 
-    const payload = {
-
-      titulo: quizTitle,
-
-      idProfessor: idProfessorLogado,
-
-      idTurma: selectedTurmaId,
-
-      perguntas:
-        creationMode === 'manual'
-          ? questions
-          : [],
-
-      containers:
-        creationMode === 'auto'
-          ? selectedContainers
-          : [],
-
-      typeCriacao: creationMode,
-
-      quantidadePerguntasAuto:
-        Number(qtdPerguntas)
-    };
-
-    setIsSaving(true);
-
     try {
+
+      setIsSaving(true);
+
+      const payload = {
+
+        titulo: quizTitle,
+
+        idProfessor: idProfessorLogado,
+
+        idTurma: selectedTurmaId,
+
+        typeCriacao: creationMode,
+
+        perguntas:
+          creationMode === 'manual'
+            ? questions
+            : [],
+
+        containers:
+          creationMode === 'auto'
+            ? selectedContainers
+            : [],
+
+        quantidadePerguntasAuto: qtdPerguntas,
+
+        data: dateRange
+      };
 
       const response = await fetch(
         'http://localhost:3001/criar-quiz',
         {
           method: 'POST',
-
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-professor-id': idProfessorLogado
           },
-
           body: JSON.stringify(payload)
         }
       );
 
-      let data = {};
-
-      try {
-        data = await response.json();
-      } catch {
-        data = {
-          error: 'Resposta inválida do servidor'
-        };
-      }
+      const data = await response.json();
 
       if (response.ok) {
 
@@ -527,7 +658,7 @@ function CreateQuiz2() {
 
       } else {
 
-        alert(data.error || "Erro ao criar quiz");
+        alert(data.error || 'Erro ao criar quiz');
       }
 
     } catch (err) {
@@ -540,9 +671,9 @@ function CreateQuiz2() {
     }
   };
 
-  // =========================
+  // =========================================================
   // MENU
-  // =========================
+  // =========================================================
 
   const menuConfig = [
     {
@@ -570,11 +701,12 @@ function CreateQuiz2() {
     },
   ];
 
-  // =========================
+  // =========================================================
   // RETURN
-  // =========================
+  // =========================================================
 
   return (
+
     <DashboardLayout
       sidebarTitle="Professor"
       menuItems={menuConfig}
@@ -583,782 +715,346 @@ function CreateQuiz2() {
 
       <S.Container>
 
-        {/* =========================================
-      HEADER
-      ========================================= */}
-
         <S.Header>
 
-          <div>
-            <h1>
-              {creationMode === 'container'
-                ? "Gerenciador de Containers"
-                : "Criar Nova Atividade"}
-            </h1>
+          <h1>
 
-            {creationMode && (
-              <p
-                style={{
-                  color: '#666',
-                  marginTop: '6px'
+            {
+              creationMode === 'container'
+                ? 'Gerenciar Containers'
+                : 'Criar Nova Atividade'
+            }
+
+          </h1>
+
+          {
+            creationMode && (
+
+              <MyButton
+                onClick={() => {
+
+                  setCreationMode(null);
+
+                  setQuestions([]);
+
+                  setSelectedContainers([]);
+
+                  setQuizTitle('');
                 }}
               >
-                {
-                  creationMode === 'manual'
-                    ? 'Monte perguntas personalizadas manualmente.'
-                    : creationMode === 'auto'
-                      ? 'Selecione containers para gerar um quiz automático.'
-                      : 'Gerencie seus bancos de perguntas.'
-                }
-              </p>
-            )}
-          </div>
-
-          {creationMode && (
-            <MyButton
-              onClick={() => {
-
-                setCreationMode(null);
-
-                setSelectedContainerData(null);
-
-                setQuestions([]);
-
-                setSelectedContainers([]);
-
-                setQuizTitle("");
-
-              }}
-              style={{
-                backgroundColor: '#757575'
-              }}
-            >
-              ← Voltar
-            </MyButton>
-          )}
+                ← Voltar
+              </MyButton>
+            )
+          }
 
         </S.Header>
 
-        {/* =========================================
-      CAMPO TÍTULO QUIZ
-      ========================================= */}
-
         {
-          creationMode &&
-          creationMode !== 'container' && (
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '700px',
-                marginBottom: '30px'
-              }}
-            >
+          !creationMode ? (
 
-              <label
-                style={{
-                  fontWeight: 'bold',
-                  display: 'block',
-                  marginBottom: '8px',
-                  color: '#333'
-                }}
+            <S.SelectionGrid>
+
+              <S.ModeCard
+                onClick={() => setCreationMode('auto')}
               >
-                Título do Quiz
-              </label>
+                <h3>Quiz Automático</h3>
 
-              <input
-                type="text"
-                placeholder="Ex: Revisão de Matemática - 2º Bimestre"
-                value={quizTitle}
-                onChange={(e) =>
-                  setQuizTitle(e.target.value)
-                }
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid #ccc',
-                  fontSize: '1rem',
-                  outline: 'none'
-                }}
-              />
-
-            </div>
-          )
-        }
-
-        {/* =========================================
-      SELEÇÃO DE MODO
-      ========================================= */}
-
-        {!creationMode ? (
-
-          <S.SelectionGrid>
-
-            <S.ModeCard
-              onClick={() => setCreationMode('auto')}
-            >
-              <h3>Gerar Quiz Automático</h3>
-
-              <p>
-                Monte quizzes usando containers já cadastrados.
-              </p>
-            </S.ModeCard>
-
-            <S.ModeCard
-              onClick={() => setCreationMode('manual')}
-            >
-              <h3>Criar Quiz Manual</h3>
-
-              <p>
-                Crie perguntas manualmente e personalize o quiz.
-              </p>
-            </S.ModeCard>
-
-            <S.ModeCard
-              onClick={() => setCreationMode('container')}
-              style={{
-                borderTop: '5px solid #2196F3'
-              }}
-            >
-              <h3
-                style={{
-                  color: '#2196F3'
-                }}
-              >
-                Gerenciar Containers
-              </h3>
-
-              <p>
-                Crie e organize bancos de perguntas.
-              </p>
-            </S.ModeCard>
-
-          </S.SelectionGrid>
-
-        ) : (
-
-
-          <S.ContentSection>
-
-            {/* =========================================
-  QUIZ MANUAL
-  ========================================= */}
-
-            {creationMode === 'manual' && (
-
-              <S.StepContainer>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '25px'
-                  }}
-                >
-
-                  <div>
-                    <h2>Quiz Manual</h2>
-
-                    <p
-                      style={{
-                        color: '#666'
-                      }}
-                    >
-                      Adicione perguntas e respostas manualmente.
-                    </p>
-                  </div>
-
-                  <MyButton
-                    onClick={handleOpenCreate}
-                    style={{
-                      backgroundColor: '#4CAF50'
-                    }}
-                  >
-                    + Nova Pergunta
-                  </MyButton>
-
-                </div>
-
-                <S.QuestionList>
-
-                  {questions.length === 0 ? (
-
-                    <div
-                      style={{
-                        padding: '30px',
-                        textAlign: 'center',
-                        color: '#666'
-                      }}
-                    >
-                      Nenhuma pergunta adicionada ainda.
-                    </div>
-
-                  ) : (
-
-                    questions.map((q, index) => (
-
-                      <S.QuestionItem
-                        key={index}
-                        onClick={() =>
-                          handleOpenEditManual(index)
-                        }
-                      >
-
-                        <div className="info">
-
-                          <strong>
-                            {index + 1}. {q.enunciado}
-                          </strong>
-
-                          <span>
-                            Clique para editar
-                          </span>
-
-                        </div>
-
-                        <div
-                          className="status-tag"
-                          style={{
-                            backgroundColor: '#4CAF50'
-                          }}
-                        >
-                          Salva
-                        </div>
-
-                      </S.QuestionItem>
-
-                    ))
-
-                  )}
-
-                </S.QuestionList>
-
-                <div
-                  style={{
-                    marginTop: '30px',
-                    display: 'flex',
-                    justifyContent: 'flex-end'
-                  }}
-                >
-
-                  <MyButton
-                    onClick={() =>
-                      setShowScheduleModal(true)
-                    }
-                    disabled={questions.length === 0}
-                  >
-                    Finalizar Quiz
-                  </MyButton>
-
-                </div>
-
-              </S.StepContainer>
-
-            )}
-
-            {/* =========================================
-  QUIZ AUTOMÁTICO
-  ========================================= */}
-
-            {creationMode === 'auto' && (
-
-              <S.StepContainer>
-
-                <h2>Quiz Automático</h2>
-
-                <p
-                  style={{
-                    color: '#666',
-                    marginBottom: '25px'
-                  }}
-                >
-                  Escolha os containers utilizados no quiz.
+                <p>
+                  Gere quizzes usando containers.
                 </p>
+              </S.ModeCard>
 
-                {loadingContainers ? (
+              <S.ModeCard
+                onClick={() => setCreationMode('manual')}
+              >
+                <h3>Quiz Manual</h3>
 
-                  <p>Carregando containers...</p>
+                <p>
+                  Crie perguntas personalizadas.
+                </p>
+              </S.ModeCard>
 
-                ) : (
+              <S.ModeCard
+                onClick={() => setCreationMode('container')}
+              >
+                <h3>Containers</h3>
 
-                  <div
-                    style={{
-                      display: 'grid',
-                      gap: '14px'
-                    }}
-                  >
+                <p>
+                  Organize seus bancos de perguntas.
+                </p>
+              </S.ModeCard>
 
-                    {containersDoBanco.map(container => {
+            </S.SelectionGrid>
 
-                      const idContainer =
-                        getContainerId(container);
+          ) : (
 
-                      const nome =
-                        getContainerNome(container);
+            <S.ContentSection>
 
-                      const descricao =
-                        getContainerDescricao(container);
+              {/* ===================================================== */}
+              {/* MANUAL */}
+              {/* ===================================================== */}
 
-                      const selected =
-                        selectedContainers.includes(idContainer);
+              {
+                creationMode === 'manual' && (
 
-                      return (
+                  <S.StepContainer>
 
-                        <div
-                          key={idContainer}
-                          onClick={() =>
-                            handleSelectContainerAuto(idContainer)
-                          }
-                          style={{
-                            border: selected
-                              ? '2px solid #2196F3'
-                              : '1px solid #ccc',
-                            padding: '18px',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            backgroundColor: selected
-                              ? '#E3F2FD'
-                              : '#fff',
-                            transition: '0.2s'
-                          }}
-                        >
+                    <h2>Perguntas do Quiz</h2>
 
-                          <strong>
-                            {selected ? '☑️ ' : '📁 '}
-                            {nome}
-                          </strong>
-
-                          <p
-                            style={{
-                              marginTop: '8px',
-                              color: '#666'
-                            }}
-                          >
-                            {descricao}
-                          </p>
-
-                        </div>
-                      );
-                    })}
-
-                  </div>
-
-                )}
-
-                <div
-                  style={{
-                    marginTop: '25px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}
-                >
-
-                  <label
-                    style={{
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Quantidade de Perguntas
-                  </label>
-
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={qtdPerguntas}
-                    onChange={(e) =>
-                      setQtdPerguntas(e.target.value)
-                    }
-                    style={{
-                      width: '90px',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      border: '1px solid #ccc'
-                    }}
-                  />
-
-                </div>
-
-                <div
-                  style={{
-                    marginTop: '30px',
-                    display: 'flex',
-                    justifyContent: 'flex-end'
-                  }}
-                >
-
-                  <MyButton
-                    onClick={() =>
-                      setShowScheduleModal(true)
-                    }
-                    disabled={
-                      selectedContainers.length === 0
-                    }
-                  >
-                    Continuar
-                  </MyButton>
-
-                </div>
-
-              </S.StepContainer>
-
-            )}
-
-            {/* =========================================
-  GERENCIAR CONTAINERS
-  ========================================= */}
-
-            {creationMode === 'container' && (
-
-              <S.StepContainer>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '25px'
-                  }}
-                >
-
-                  <div>
-                    <h2>Meus Containers</h2>
-
-                    <p
-                      style={{
-                        color: '#666'
-                      }}
+                    <MyButton
+                      onClick={handleOpenCreateQuestion}
                     >
-                      Gerencie seus bancos de perguntas.
-                    </p>
-                  </div>
+                      + Nova Pergunta
+                    </MyButton>
 
-                </div>
+                    <S.QuestionList>
 
-                {/* FORM NOVO CONTAINER */}
+                      {
+                        questions.length === 0
+                          ? 'Nenhuma pergunta adicionada.'
+                          : questions.map((q, index) => (
 
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    marginBottom: '30px'
-                  }}
-                >
+                            <S.QuestionItem
+                              key={index}
+                            >
 
-                  <input
-                    type="text"
-                    placeholder="Nome do container"
-                    value={novoNomeContainer}
-                    onChange={(e) =>
-                      setNovoNomeContainer(e.target.value)
-                    }
-                    style={{
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc'
-                    }}
-                  />
+                              <div className="info">
 
-                  <textarea
-                    placeholder="Descrição"
-                    value={containerDescription}
-                    onChange={(e) =>
-                      setContainerDescription(e.target.value)
-                    }
-                    style={{
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc',
-                      minHeight: '100px'
-                    }}
-                  />
+                                <strong>
+                                  {q.enunciado}
+                                </strong>
 
-                  <MyButton
-                    onClick={handleSalvarContainer}
-                    style={{
-                      backgroundColor: '#2196F3'
-                    }}
-                  >
-                    + Criar Container
-                  </MyButton>
+                                <span>
+                                  {q.alternativas.length} alternativas
+                                </span>
 
-                </div>
+                              </div>
 
-                {/* LISTA CONTAINERS */}
+                            </S.QuestionItem>
 
-                {loadingContainers ? (
+                          ))
+                      }
 
-                  <p>Carregando containers...</p>
+                    </S.QuestionList>
 
-                ) : containersDoBanco.length === 0 ? (
+                    <MyButton
+                      onClick={() =>
+                        setShowScheduleModal(true)
+                      }
+                    >
+                      Finalizar Quiz
+                    </MyButton>
 
-                  <p>Nenhum container encontrado.</p>
+                  </S.StepContainer>
+                )
+              }
 
-                ) : (
+              {/* ===================================================== */}
+              {/* AUTO */}
+              {/* ===================================================== */}
 
-                  <div
-                    style={{
-                      display: 'grid',
-                      gap: '15px'
-                    }}
-                  >
+              {
+                creationMode === 'auto' && (
 
-                    {containersDoBanco.map(container => {
+                  <S.StepContainer>
 
-                      const idContainer =
-                        getContainerId(container);
+                    <h2>Selecionar Containers</h2>
 
-                      const nome =
-                        getContainerNome(container);
+                    <S.ContainerList>
 
-                      const descricao =
-                        getContainerDescricao(container);
+                      {
+                        containersDoBanco.map(container => {
 
-                      return (
+                          const idContainer =
+                            getContainerId(container);
 
-                        <div
-                          key={idContainer}
-                          style={{
-                            border: '1px solid #ccc',
-                            borderRadius: '10px',
-                            padding: '18px',
-                            backgroundColor: '#fff'
-                          }}
-                        >
+                          const selected =
+                            selectedContainers.includes(idContainer);
 
-                          <strong>
-                            📁 {nome}
-                          </strong>
+                          return (
 
-                          <p
-                            style={{
-                              marginTop: '8px',
-                              color: '#666'
-                            }}
-                          >
-                            {descricao}
-                          </p>
-
-                          <div
-                            style={{
-                              marginTop: '15px',
-                              display: 'flex',
-                              gap: '10px'
-                            }}
-                          >
-
-                            <MyButton
+                            <S.ContainerItem
+                              key={idContainer}
                               onClick={() =>
-                                handleAcessarContainer(container)
+                                handleSelectContainerAuto(idContainer)
                               }
                             >
-                              Gerenciar
-                            </MyButton>
 
-                          </div>
+                              <div>
 
-                        </div>
-                      );
-                    })}
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  readOnly
+                                />
 
-                  </div>
+                                <strong>
+                                  {getContainerNome(container)}
+                                </strong>
 
-                )}
+                              </div>
 
-              </S.StepContainer>
+                            </S.ContainerItem>
 
-            )}
+                          );
+                        })
+                      }
 
-          </S.ContentSection>
+                    </S.ContainerList>
 
+                    <div>
 
-        )}
+                      <label>
+                        Quantidade de perguntas
+                      </label>
 
-        {/* =========================================
-      MODAL FINALIZAR QUIZ
-      ========================================= */}
+                      <input
+                        type="number"
+                        value={qtdPerguntas}
+                        onChange={(e) =>
+                          setQtdPerguntas(e.target.value)
+                        }
+                      />
 
-        {
-          showScheduleModal && (
+                    </div>
 
-            <Modal
-              title="Revisar e Finalizar Quiz"
-              isOpen={showScheduleModal}
-              onClose={() =>
-                setShowScheduleModal(false)
+                    <MyButton
+                      onClick={() =>
+                        setShowScheduleModal(true)
+                      }
+                    >
+                      Finalizar Quiz
+                    </MyButton>
+
+                  </S.StepContainer>
+                )
               }
-            >
 
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '18px',
-                  padding: '10px'
-                }}
-              >
+              {/* ===================================================== */}
+              {/* CONTAINERS */}
+              {/* ===================================================== */}
 
-                <div>
+              {
+                creationMode === 'container' && (
 
-                  <label
-                    style={{
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      display: 'block'
-                    }}
-                  >
-                    Título do Quiz
-                  </label>
+                  <S.StepContainer>
 
-                  <input
-                    type="text"
-                    value={quizTitle}
-                    onChange={(e) =>
-                      setQuizTitle(e.target.value)
-                    }
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc'
-                    }}
-                  />
+                    <h2>Novo Container</h2>
 
-                </div>
+                    <input
+                      type="text"
+                      placeholder="Nome"
+                      value={novoNomeContainer}
+                      onChange={(e) =>
+                        setNovoNomeContainer(e.target.value)
+                      }
+                    />
 
-                <div>
+                    <textarea
+                      placeholder="Descrição"
+                      value={containerDescription}
+                      onChange={(e) =>
+                        setContainerDescription(e.target.value)
+                      }
+                    />
 
-                  <label
-                    style={{
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      display: 'block'
-                    }}
-                  >
-                    Turma
-                  </label>
+                    <MyButton
+                      onClick={handleSalvarContainer}
+                    >
+                      Criar Container
+                    </MyButton>
 
-                  <select
-                    value={selectedTurmaId}
-                    onChange={(e) =>
-                      setSelectedTurmaId(e.target.value)
-                    }
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc'
-                    }}
-                  >
+                    <S.ExistingContainersSection>
 
-                    {classes.map((c) => (
+                      <h2>Meus Containers</h2>
 
-                      <option
-                        key={c.id || c.IDTURMA}
-                        value={c.id || c.IDTURMA}
-                      >
-                        {c.nome || c.NOMETURMA}
-                      </option>
+                      <S.ContainersList>
 
-                    ))}
+                        {
+                          loadingContainers
+                            ? (
+                              <p>Carregando...</p>
+                            )
+                            : containersDoBanco.map(container => (
 
-                  </select>
+                              <S.ContainerRow
+                                key={getContainerId(container)}
+                              >
 
-                </div>
+                                <div className="container-info">
 
-                <div>
+                                  <div>
 
-                  <label
-                    style={{
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      display: 'block'
-                    }}
-                  >
-                    Data
-                  </label>
+                                    <strong>
+                                      {getContainerNome(container)}
+                                    </strong>
 
-                  <input
-                    type="date"
-                    value={dateRange}
-                    onChange={(e) =>
-                      setDateRange(e.target.value)
-                    }
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc'
-                    }}
-                  />
+                                    <p>
+                                      {getContainerDescricao(container)}
+                                    </p>
 
-                </div>
+                                  </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '12px',
-                    marginTop: '20px'
-                  }}
-                >
+                                </div>
 
-                  <MyButton
-                    onClick={handleFinishQuiz}
-                    disabled={isSaving}
-                    style={{
-                      backgroundColor: '#4CAF50'
-                    }}
-                  >
-                    {
-                      isSaving
-                        ? 'Salvando...'
-                        : 'Salvar Quiz'
-                    }
-                  </MyButton>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    gap: '10px'
+                                  }}
+                                >
 
-                  <MyButton
-                    onClick={() =>
-                      setShowScheduleModal(false)
-                    }
-                    style={{
-                      backgroundColor: '#f44336'
-                    }}
-                  >
-                    Voltar
-                  </MyButton>
+                                  <MyButton
+                                    onClick={() =>
+                                      handleAcessarContainer(container)
+                                    }
+                                  >
+                                    Abrir
+                                  </MyButton>
 
-                </div>
+                                  <MyButton
+                                    onClick={() =>
+                                      handleDeleteContainer(
+                                        getContainerId(container)
+                                      )
+                                    }
+                                  >
+                                    Excluir
+                                  </MyButton>
 
-              </div>
+                                </div>
 
-            </Modal>
+                              </S.ContainerRow>
+
+                            ))
+                        }
+
+                      </S.ContainersList>
+
+                    </S.ExistingContainersSection>
+
+                  </S.StepContainer>
+                )
+              }
+
+            </S.ContentSection>
 
           )
         }
-        {/* =========================================
-MODAL CRIAR / EDITAR PERGUNTA
-========================================= */}
 
-        <QuestionModal
-          isOpen={isModalOpen}
-          onClose={handleCloseQuestionModal}
-          title={
-            editingIndex !== null ||
-              editingQuestionId !== null
-              ? "Editar Pergunta"
-              : "Nova Pergunta"
+        {/* ===================================================== */}
+        {/* MODAL FINAL */}
+        {/* ===================================================== */}
+
+        <Modal
+          title="Finalizar Quiz"
+          isOpen={showScheduleModal}
+          onClose={() =>
+            setShowScheduleModal(false)
           }
         >
 
-          <form
-            onSubmit={
-              creationMode === 'container'
-                ? handleSaveContainerQuestion
-                : handleSaveManualQuestion
-            }
+          <div
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -1366,128 +1062,236 @@ MODAL CRIAR / EDITAR PERGUNTA
             }}
           >
 
-            {/* ENUNCIADO */}
+            <input
+              type="text"
+              placeholder="Título do Quiz"
+              value={quizTitle}
+              onChange={(e) =>
+                setQuizTitle(e.target.value)
+              }
+            />
 
-            <div>
-
-              <label
-                style={{
-                  fontWeight: 'bold',
-                  display: 'block',
-                  marginBottom: '8px'
-                }}
-              >
-                Enunciado
-              </label>
-
-              <textarea
-                value={enunciado}
-                onChange={(e) =>
-                  setEnunciado(e.target.value)
-                }
-                placeholder="Digite a pergunta..."
-                required
-                style={{
-                  width: '100%',
-                  minHeight: '120px',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ccc',
-                  resize: 'vertical'
-                }}
-              />
-
-            </div>
-
-            {/* ALTERNATIVAS */}
-
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }}
+            <select
+              value={selectedTurmaId}
+              onChange={(e) =>
+                setSelectedTurmaId(e.target.value)
+              }
             >
 
-              {options.map((option, index) => (
+              {
+                classes.map((c) => (
 
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}
-                >
+                  <option
+                    key={c.id}
+                    value={c.id}
+                  >
+                    {c.nome}
+                  </option>
 
-                  <input
-                    type="radio"
-                    checked={correctOption === index}
-                    onChange={() =>
-                      setCorrectOption(index)
-                    }
-                  />
+                ))
+              }
 
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) =>
-                      handleOptionChange(
-                        index,
-                        e.target.value
-                      )
-                    }
-                    placeholder={`Alternativa ${String.fromCharCode(65 + index)}`}
-                    required
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc'
-                    }}
-                  />
+            </select>
 
-                </div>
+            <input
+              type="date"
+              value={dateRange}
+              onChange={(e) =>
+                setDateRange(e.target.value)
+              }
+            />
 
-              ))}
-
-            </div>
-
-            {/* BOTÕES */}
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                marginTop: '10px'
-              }}
-            >
+            <S.ModalFooter>
 
               <MyButton
-                type="button"
-                onClick={handleCloseQuestionModal}
-                style={{
-                  backgroundColor: '#757575'
-                }}
+                onClick={() =>
+                  setShowScheduleModal(false)
+                }
               >
                 Cancelar
               </MyButton>
 
               <MyButton
-                type="submit"
-                style={{
-                  backgroundColor: '#4CAF50'
-                }}
+                onClick={handleFinishQuiz}
+                disabled={isSaving}
               >
-                Salvar Pergunta
+                {
+                  isSaving
+                    ? 'Salvando...'
+                    : 'Salvar Quiz'
+                }
               </MyButton>
 
-            </div>
+            </S.ModalFooter>
 
-          </form>
+          </div>
+
+        </Modal>
+
+        {/* ===================================================== */}
+        {/* MODAL PERGUNTA */}
+        {/* ===================================================== */}
+
+        <QuestionModal
+          isOpen={isModalOpen}
+          onClose={handleCloseQuestionModal}
+          title="Pergunta"
+        >
+
+          <S.FormQuestion
+            onSubmit={handleSaveManualQuestion}
+          >
+
+            <textarea
+              placeholder="Digite a pergunta"
+              value={enunciado}
+              onChange={(e) =>
+                setEnunciado(e.target.value)
+              }
+              required
+            />
+
+            <S.OptionsGrid>
+
+              {
+                options.map((option, index) => (
+
+                  <S.OptionInputGroup
+                    key={index}
+                  >
+
+                    <input
+                      type="radio"
+                      checked={correctOption === index}
+                      onChange={() =>
+                        setCorrectOption(index)
+                      }
+                    />
+
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) =>
+                        handleOptionChange(
+                          index,
+                          e.target.value
+                        )
+                      }
+                      placeholder={`Alternativa ${String.fromCharCode(65 + index)}`}
+                      required
+                    />
+
+                  </S.OptionInputGroup>
+
+                ))
+              }
+
+            </S.OptionsGrid>
+
+            <S.ModalFooter>
+
+              <MyButton
+                type="button"
+                onClick={handleCloseQuestionModal}
+              >
+                Cancelar
+              </MyButton>
+
+              <MyButton type="submit">
+                Salvar
+              </MyButton>
+
+            </S.ModalFooter>
+
+          </S.FormQuestion>
 
         </QuestionModal>
+
+        {/* ===================================================== */}
+        {/* MODAL CONTAINER */}
+        {/* ===================================================== */}
+
+        <Modal
+          title={
+            selectedContainerData
+              ? getContainerNome(selectedContainerData)
+              : 'Container'
+          }
+          isOpen={isContainerModalOpen}
+          onClose={() =>
+            setIsContainerModalOpen(false)
+          }
+        >
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}
+          >
+
+            {
+              questionsInContainer.length === 0 ? (
+
+                <p>
+                  Nenhuma pergunta cadastrada.
+                </p>
+
+              ) : (
+
+                questionsInContainer.map((question) => (
+
+                  <S.QuestionItem
+                    key={question.id}
+                  >
+
+                    <div className="info">
+
+                      <strong>
+                        {question.enunciado}
+                      </strong>
+
+                      <span>
+                        Correta: {question.correta}
+                      </span>
+
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '10px'
+                      }}
+                    >
+
+                      <MyButton
+                        onClick={() =>
+                          handleEditQuestion(question)
+                        }
+                      >
+                        Editar
+                      </MyButton>
+
+                      <MyButton
+                        onClick={() =>
+                          handleDeleteQuestion(question.id)
+                        }
+                      >
+                        Excluir
+                      </MyButton>
+
+                    </div>
+
+                  </S.QuestionItem>
+
+                ))
+              )
+            }
+
+          </div>
+
+        </Modal>
 
       </S.Container>
 
