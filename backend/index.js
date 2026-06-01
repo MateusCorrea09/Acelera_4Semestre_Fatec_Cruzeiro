@@ -264,6 +264,236 @@ app.put('/containers/:idContainer',
         );
     }
 );
+app.get('/aluno/:idAluno/notificacoes',
+    (req, res) => {
+
+        const idAluno =
+            parseInt(req.params.idAluno);
+
+        const sql = `
+            SELECT
+                Q.IDQUIZ_PK AS id,
+                Q.TITULO AS titulo
+            FROM QUIZ Q
+
+            INNER JOIN ALUNOS_TURMA AT
+                ON AT.IDTURMA_PK_FK =
+                Q.IDTURMA_FK
+
+            LEFT JOIN resultados R
+                ON R.IDQUIZ_FK =
+                Q.IDQUIZ_PK
+                AND R.IDALUNO_FK =
+                AT.IDALUNO_PK_FK
+
+            WHERE
+                AT.IDALUNO_PK_FK = ?
+                AND Q.ESTATUS = 1
+                AND R.IDRESULTADO IS NULL
+
+            ORDER BY
+                Q.IDQUIZ_PK DESC
+        `;
+
+        db.all(
+            sql,
+            [idAluno],
+            (err, rows) => {
+
+                if (err) {
+
+                    console.error(
+                        "Erro notificações:",
+                        err.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err.message
+                    });
+                }
+
+                const notificacoes =
+                    (rows || []).map(quiz => ({
+
+                        id: quiz.id,
+
+                        text:
+                            `Novo quiz disponível: ${quiz.titulo}`,
+
+                        time:
+                            'Disponível agora',
+
+                        isQuiz: true,
+
+                        quizId: quiz.id,
+
+                        titulo: quiz.titulo
+                    }));
+
+                res.json(notificacoes);
+            }
+        );
+    }
+);
+app.get('/aluno/:idAluno/quizzes', (req, res) => {
+
+    const idAluno =
+        parseInt(req.params.idAluno);
+
+    const sql = `
+        SELECT
+
+            Q.IDQUIZ_PK,
+            Q.TITULO,
+            Q.CODIGO_PIN
+
+        FROM QUIZ Q
+
+        INNER JOIN ALUNOS_TURMA AT
+            ON AT.IDTURMA_PK_FK =
+               Q.IDTURMA_FK
+
+        LEFT JOIN RESULTADOS R
+            ON R.IDQUIZ_FK =
+               Q.IDQUIZ_PK
+           AND R.IDALUNO_FK =
+               AT.IDALUNO_PK_FK
+
+        WHERE
+            AT.IDALUNO_PK_FK = ?
+            AND AT.STATUS = 'MATRICULADO'
+            AND Q.ESTATUS = 1
+            AND R.IDRESULTADO IS NULL
+
+        ORDER BY
+            Q.IDQUIZ_PK DESC
+    `;
+
+    db.all(
+        sql,
+        [idAluno],
+        (err, rows) => {
+
+            if (err) {
+
+                console.error(
+                    'Erro quizzes aluno:',
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+
+            res.json(rows || []);
+        }
+    );
+});
+app.get('/aluno/:idAluno/historico',
+    (req, res) => {
+
+        const idAluno =
+            parseInt(req.params.idAluno);
+
+        const sql = `
+      SELECT
+        R.IDRESULTADO AS id,
+        Q.TITULO AS titulo,
+        ROUND(R.NOTAFINAL * 10, 1) AS nota,
+        Q.IDQUIZ_PK AS idQuiz
+      FROM RESULTADOS R
+      INNER JOIN QUIZ Q
+        ON Q.IDQUIZ_PK = R.IDQUIZ_FK
+      WHERE R.IDALUNO_FK = ?
+      ORDER BY R.IDRESULTADO DESC
+    `;
+
+        db.all(
+            sql,
+            [idAluno],
+            (err, rows) => {
+
+                if (err) {
+
+                    return res.status(500).json({
+                        success: false,
+                        error: err.message
+                    });
+
+                }
+
+                const historico =
+                    (rows || []).map(item => ({
+
+                        id: item.id,
+
+                        titulo: item.titulo,
+
+                        data: new Date().toLocaleDateString('pt-BR'),
+
+                        nota: item.nota / 10,
+
+                        assunto: '',
+
+                        dificuldade: '',
+
+                        perguntas: []
+
+                    }));
+
+                res.json(historico);
+
+            }
+        );
+    }
+);
+app.get('/aluno/:idAluno/dashboard', (req, res) => {
+
+    const idAluno =
+        parseInt(req.params.idAluno);
+
+    const sql = `
+        SELECT
+
+            Q.IDQUIZ_PK AS id,
+
+            Q.TITULO AS nome,
+
+            ROUND(
+                R.NOTAFINAL * 10,
+                1
+            ) AS pontuacao
+
+        FROM RESULTADOS R
+
+        INNER JOIN QUIZ Q
+            ON Q.IDQUIZ_PK = R.IDQUIZ_FK
+
+        WHERE R.IDALUNO_FK = ?
+
+        ORDER BY R.IDRESULTADO DESC
+    `;
+
+    db.all(
+        sql,
+        [idAluno],
+        (err, rows) => {
+
+            if (err) {
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+
+            res.json(rows || []);
+        }
+    );
+});
 app.get('/containers/:idContainer/perguntas',
     (req, res) => {
 
@@ -330,255 +560,317 @@ app.get('/containers/:idContainer/perguntas',
 );
 app.post('/criar-quiz',
     somenteProfessor,
-    (req, res) => {
+    async (req, res) => {
 
         const {
             titulo,
             idProfessor,
             idTurma,
-            perguntas,
-            containers,
-            typeCriacao,
-            quantidadePerguntasAuto
+            perguntas
         } = req.body;
-        if (!titulo || !titulo.trim()) {
 
+        if (!titulo?.trim()) {
             return res.status(400).json({
                 success: false,
-                error: "Título obrigatório"
+                error: 'Título obrigatório'
             });
         }
 
-        if (!idProfessor) {
-
-            return res.status(400).json({
-                success: false,
-                error: "Professor inválido"
-            });
-        }
-        const pin = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
-        const sqlQuiz = `
-            INSERT INTO QUIZ (
-                IDCRIADOR_FK,
-                TITULO,
-                CODIGO_PIN,
-                IDTURMA_FK
+        const pin = (
+            Math.floor(
+                100000 + Math.random() * 900000
             )
-            VALUES (?, ?, ?, ?)
-        `;
+        ).toString();
 
-        db.run(
-            sqlQuiz,
-            [
-                idProfessor,
-                titulo,
-                pin,
-                idTurma
-            ],
-            function (err) {
+        const runAsync = (sql, params = []) => {
 
-                if (err) {
+            return new Promise((resolve, reject) => {
 
-                    console.error(
-                        " Erro criar quiz:",
-                        err.message
+                db.run(
+                    sql,
+                    params,
+                    function (err) {
+
+                        if (err) {
+
+                            console.error(
+                                'SQL ERROR:',
+                                sql,
+                                err
+                            );
+
+                            return reject(err);
+                        }
+
+                        resolve(this);
+                    }
+                );
+            });
+        };
+
+        try {
+
+            await runAsync(
+                'BEGIN IMMEDIATE TRANSACTION'
+            );
+            const quiz = await runAsync(
+                `
+                INSERT INTO QUIZ
+                (
+                    IDCRIADOR_FK,
+                    TITULO,
+                    CODIGO_PIN,
+                    IDTURMA_FK
+                )
+                VALUES (?, ?, ?, ?)
+                `,
+                [
+                    idProfessor,
+                    titulo,
+                    pin,
+                    idTurma
+                ]
+            );
+
+            const idQuiz = quiz.lastID;
+
+            for (const pergunta of perguntas) {
+
+                const perguntaInsert =
+                    await runAsync(
+                        `
+                        INSERT INTO PERGUNTA
+                        (
+                            IDPROFESSOR_FK,
+                            ENUNCIADO
+                        )
+                        VALUES (?, ?)
+                        `,
+                        [
+                            idProfessor,
+                            pergunta.enunciado
+                        ]
                     );
 
-                    return res.status(500).json({
-                        success: false,
-                        error: err.message
-                    });
-                }
-                const idQuiz = this.lastID;
-                console.log(
-                    "Quiz criado:",
-                    idQuiz
+                const idPergunta =
+                    perguntaInsert.lastID;
+
+                await runAsync(
+                    `
+                    INSERT INTO QUIZ_PERGUNTA
+                    (
+                        IDQUIZ_PK_FK,
+                        IDPERGUNTA_PK_FK
+                    )
+                    VALUES (?, ?)
+                    `,
+                    [
+                        idQuiz,
+                        idPergunta
+                    ]
                 );
-                if (
-                    typeCriacao === 'manual' &&
-                    perguntas &&
-                    perguntas.length > 0
+
+                for (
+                    let i = 0;
+                    i < pergunta.alternativas.length;
+                    i++
                 ) {
 
-                    perguntas.forEach((p) => {
-                        const sqlPergunta = `
-                            INSERT INTO PERGUNTA (
-                                IDPROFESSOR_FK,
-                                ENUNCIADO
-                            )
-                            VALUES (?, ?)
-                        `;
+                    const alternativa =
+                        pergunta.alternativas[i];
 
-                        db.run(
-                            sqlPergunta,
-                            [
-                                idProfessor,
-                                p.enunciado
-                            ],
-                            function (err) {
-
-                                if (err) {
-
-                                    console.error(
-                                        "❌ Pergunta:",
-                                        err.message
-                                    );
-
-                                    return;
-                                }
-
-                                const idPergunta =
-                                    this.lastID;
-                                db.run(
-                                    `
-                                    INSERT INTO QUIZ_PERGUNTA (
-                                        IDQUIZ_PK_FK,
-                                        IDPERGUNTA_PK_FK
-                                    )
-                                    VALUES (?, ?)
-                                    `,
-                                    [
-                                        idQuiz,
-                                        idPergunta
-                                    ],
-                                    (err) => {
-
-                                        if (err) {
-                                            console.error(
-                                                "❌ Vincular pergunta:",
-                                                err.message
-                                            );
-                                        }
-                                    }
-                                );
-                                if (
-                                    p.alternativas &&
-                                    p.alternativas.length > 0
-                                ) {
-
-                                    p.alternativas.forEach(
-                                        (
-                                            alternativa,
-                                            index
-                                        ) => {
-
-                                            const rotulo =
-                                                String.fromCharCode(
-                                                    65 + index
-                                                );
-
-                                            db.run(
-                                                `
-                                                INSERT INTO ALTERNATIVAS (
-                                                    IDPERGUNTA_FK,
-                                                    ALTERNATIVA,
-                                                    ROTULO,
-                                                    CORRETA
-                                                )
-                                                VALUES (?, ?, ?, ?)
-                                                `,
-                                                [
-                                                    idPergunta,
-                                                    alternativa,
-                                                    rotulo,
-                                                    index === p.correta
-                                                        ? 1
-                                                        : 0
-                                                ],
-                                                (err) => {
-
-                                                    if (err) {
-                                                        console.error(
-                                                            "❌ Alternativa:",
-                                                            err.message
-                                                        );
-                                                    }
-                                                }
-                                            );
-                                        }
-                                    );
-                                }
-                            }
+                    const rotulo =
+                        String.fromCharCode(
+                            65 + i
                         );
+
+                    await runAsync(
+                        `
+                        INSERT INTO ALTERNATIVAS
+                        (
+                            IDPERGUNTA_FK,
+                            ALTERNATIVA,
+                            ROTULO,
+                            CORRETA
+                        )
+                        VALUES (?, ?, ?, ?)
+                        `,
+                        [
+                            idPergunta,
+                            alternativa,
+                            rotulo,
+                            i === pergunta.correta
+                                ? 1
+                                : 0
+                        ]
+                    );
+                }
+            }
+
+            await runAsync(
+                'COMMIT'
+            );
+
+            return res.status(201).json({
+                success: true,
+                idQuiz,
+                pin
+            });
+
+        } catch (err) {
+
+            try {
+                await runAsync(
+                    'ROLLBACK'
+                );
+            } catch (_) { }
+
+            console.error(
+                'ERRO CRIAR QUIZ:',
+                err
+            );
+
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        }
+    }
+);
+app.get('/quiz/:id', (req, res) => {
+
+    const idQuiz = req.params.id;
+
+    const sqlQuiz = `
+        SELECT
+            IDQUIZ_PK,
+            TITULO
+        FROM QUIZ
+        WHERE IDQUIZ_PK = ?
+    `;
+
+    db.get(sqlQuiz, [idQuiz], (err, quiz) => {
+
+        if (err) {
+            return res.status(500).json({
+                erro: err.message
+            });
+        }
+
+        if (!quiz) {
+            return res.status(404).json({
+                erro: 'Quiz não encontrado'
+            });
+        }
+
+        const sqlPerguntas = `
+            SELECT
+                P.IDPERGUNTA_PK,
+                P.ENUNCIADO
+            FROM QUIZ_PERGUNTA QP
+
+            INNER JOIN PERGUNTA P
+                ON P.IDPERGUNTA_PK =
+                   QP.IDPERGUNTA_PK_FK
+
+            WHERE QP.IDQUIZ_PK_FK = ?
+        `;
+
+        db.all(
+            sqlPerguntas,
+            [idQuiz],
+            (errPerguntas, perguntas) => {
+
+                if (errPerguntas) {
+
+                    return res.status(500).json({
+                        erro: errPerguntas.message
                     });
                 }
-                if (
-                    typeCriacao === 'auto' &&
-                    containers &&
-                    containers.length > 0
-                ) {
 
-                    const placeholders =
-                        containers
-                            .map(() => '?')
-                            .join(',');
+                if (!perguntas.length) {
 
-                    const sqlBuscarPerguntas = `
-                        SELECT IDPERGUNTA_PK
-                        FROM PERGUNTA
-                        WHERE IDCONTAINER_FK IN (${placeholders})
-                        ORDER BY RANDOM()
-                        LIMIT ?
+                    return res.json({
+                        titulo: quiz.TITULO,
+                        perguntas: []
+                    });
+                }
+
+                const perguntasFormatadas = [];
+                let processadas = 0;
+
+                perguntas.forEach((pergunta) => {
+
+                    const sqlAlternativas = `
+                        SELECT
+                            ALTERNATIVA,
+                            CORRETA
+                        FROM ALTERNATIVAS
+                        WHERE IDPERGUNTA_FK = ?
+                        ORDER BY IDALTERNATIVA_PK
                     `;
 
                     db.all(
-                        sqlBuscarPerguntas,
-                        [
-                            ...containers,
-                            quantidadePerguntasAuto
-                        ],
-                        (err, rows) => {
+                        sqlAlternativas,
+                        [pergunta.IDPERGUNTA_PK],
+                        (errAlt, alternativas) => {
 
-                            if (err) {
+                            if (errAlt) {
 
-                                console.error(
-                                    "❌ Buscar perguntas:",
-                                    err.message
-                                );
-
-                                return;
+                                return res.status(500).json({
+                                    erro: errAlt.message
+                                });
                             }
 
-                            rows.forEach((row) => {
+                            let indiceCorreta = 0;
 
-                                db.run(
-                                    `
-                                    INSERT INTO QUIZ_PERGUNTA (
-                                        IDQUIZ_PK_FK,
-                                        IDPERGUNTA_PK_FK
-                                    )
-                                    VALUES (?, ?)
-                                    `,
-                                    [
-                                        idQuiz,
-                                        row.IDPERGUNTA_PK
-                                    ],
-                                    (err) => {
+                            alternativas.forEach(
+                                (alt, index) => {
 
-                                        if (err) {
+                                    if (alt.CORRETA === 1) {
 
-                                            console.error(
-                                                "❌ Relacionar pergunta:",
-                                                err.message
-                                            );
-                                        }
+                                        indiceCorreta = index;
                                     }
-                                );
+                                }
+                            );
+
+                            perguntasFormatadas.push({
+
+                                enunciado:
+                                    pergunta.ENUNCIADO,
+
+                                alternativas:
+                                    alternativas.map(
+                                        a => a.ALTERNATIVA
+                                    ),
+
+                                correta:
+                                    indiceCorreta
                             });
+
+                            processadas++;
+
+                            if (
+                                processadas ===
+                                perguntas.length
+                            ) {
+
+                                res.json({
+
+                                    titulo:
+                                        quiz.TITULO,
+
+                                    perguntas:
+                                        perguntasFormatadas
+                                });
+                            }
                         }
                     );
-                }
-                res.status(201).json({
-                    success: true,
-                    idQuiz,
-                    pin
                 });
             }
         );
-    }
-);
+    });
+});
 app.put('/perguntas/:idPergunta',
     somenteProfessor,
     (req, res) => {
@@ -1004,9 +1296,9 @@ app.get('/alunos/turma/:idTurma',
 
                 acertos:
                     aluno.nota >= 70 ? 8 :
-                    aluno.nota >= 50 ? 5 :
-                    aluno.nota === null ? 0 :
-                    2,
+                        aluno.nota >= 50 ? 5 :
+                            aluno.nota === null ? 0 :
+                                2,
 
                 desempenho:
                     aluno.nota === null
@@ -1657,6 +1949,55 @@ app.get('/', (req, res) => {
 });
 app.get('/teste', (req, res) => {
     res.send("Servidor OK");
+});
+app.post('/resultados', (req, res) => {
+
+    const {
+        idAluno,
+        idQuiz,
+        notaFinal,
+        acertos
+    } = req.body;
+
+    const sql = `
+        INSERT INTO RESULTADOS (
+            IDALUNO_FK,
+            IDQUIZ_FK,
+            NOTAFINAL,
+            ACERTOS
+        )
+        VALUES (?, ?, ?, ?)
+    `;
+
+    db.run(
+        sql,
+        [
+            idAluno,
+            idQuiz,
+            notaFinal,
+            acertos
+        ],
+        function(err) {
+
+            if (err) {
+
+                console.error(
+                    'Erro ao salvar resultado:',
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+
+            res.status(201).json({
+                success: true,
+                idResultado: this.lastID
+            });
+        }
+    );
 });
 const PORT = 3001;
 app.listen(PORT, () => {

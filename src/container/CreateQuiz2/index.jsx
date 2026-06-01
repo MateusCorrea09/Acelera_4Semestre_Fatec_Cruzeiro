@@ -13,10 +13,6 @@ function CreateQuiz2() {
     localStorage.getItem('idProfessor')
   );
 
-  // =========================================================
-  // STATES
-  // =========================================================
-
   const [creationMode, setCreationMode] = useState(null);
 
   const [quizTitle, setQuizTitle] = useState('');
@@ -68,11 +64,6 @@ function CreateQuiz2() {
   );
 
   const [isSaving, setIsSaving] = useState(false);
-
-  // =========================================================
-  // HELPERS
-  // =========================================================
-
   const getContainerId = (container) =>
     container?.id ||
     container?.IDCONTAINER;
@@ -86,11 +77,6 @@ function CreateQuiz2() {
     container?.descricao ||
     container?.DESCRICAO ||
     'Sem descrição';
-
-  // =========================================================
-  // FETCH QUIZZES
-  // =========================================================
-
   const fetchQuizzesProfessor = useCallback(async () => {
 
     try {
@@ -122,10 +108,6 @@ function CreateQuiz2() {
     }
 
   }, [idProfessorLogado]);
-
-  // =========================================================
-  // FETCH CONTAINERS
-  // =========================================================
 
   const fetchContainers = useCallback(async () => {
 
@@ -159,10 +141,6 @@ function CreateQuiz2() {
 
   }, [idProfessorLogado]);
 
-  // =========================================================
-  // FETCH TURMAS
-  // =========================================================
-
   useEffect(() => {
 
     fetch(
@@ -190,10 +168,6 @@ function CreateQuiz2() {
 
   }, [idProfessorLogado]);
 
-  // =========================================================
-  // INITIAL LOAD
-  // =========================================================
-
   useEffect(() => {
 
     fetchContainers();
@@ -201,10 +175,6 @@ function CreateQuiz2() {
     fetchQuizzesProfessor();
 
   }, [fetchContainers, fetchQuizzesProfessor]);
-
-  // =========================================================
-  // MODAL HELPERS
-  // =========================================================
 
   const resetQuestionModal = () => {
 
@@ -225,8 +195,6 @@ function CreateQuiz2() {
 
     resetQuestionModal();
 
-    // Se estava editando pergunta de container,
-    // reabre o modal do container
     if (selectedContainerData) {
 
       setTimeout(() => {
@@ -234,10 +202,6 @@ function CreateQuiz2() {
       }, 150);
     }
   };
-
-  // =========================================================
-  // MANUAL QUIZ
-  // =========================================================
 
   const handleOpenCreateQuestion = () => {
 
@@ -251,10 +215,6 @@ function CreateQuiz2() {
     e.preventDefault();
 
     try {
-
-      // =====================================================
-      // EDITANDO PERGUNTA EXISTENTE
-      // =====================================================
 
       if (editingQuestionId) {
 
@@ -283,9 +243,6 @@ function CreateQuiz2() {
           return;
         }
 
-        // ============================================
-        // ATUALIZA LISTA LOCAL
-        // ============================================
 
         setQuestionsInContainer(prev =>
           prev.map(q => {
@@ -311,10 +268,6 @@ function CreateQuiz2() {
 
         return;
       }
-
-      // =====================================================
-      // CRIAÇÃO MANUAL
-      // =====================================================
 
       const questionData = {
 
@@ -350,10 +303,6 @@ function CreateQuiz2() {
       alert('Erro ao salvar pergunta');
     }
   };
-
-  // =========================================================
-  // CONTAINER
-  // =========================================================
 
   const handleSalvarContainer = async () => {
 
@@ -407,10 +356,6 @@ function CreateQuiz2() {
     }
   };
 
-  // =========================================================
-  // ABRIR CONTAINER
-  // =========================================================
-
   const handleAcessarContainer = async (container) => {
 
     try {
@@ -441,9 +386,6 @@ function CreateQuiz2() {
     }
   };
 
-  // =========================================================
-  // EXCLUIR PERGUNTA
-  // =========================================================
 
   const handleDeleteQuestion = async (idPergunta) => {
 

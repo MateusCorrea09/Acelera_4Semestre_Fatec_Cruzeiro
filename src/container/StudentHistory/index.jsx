@@ -1,133 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { ReviewModal } from "../../components/Modal";
 import ResultBar from '../../components/ResultBar';
-
+import { useNavigate } from 'react-router-dom';
 import * as S from './style';
 
 function StudentHistory() {
-
+  const navigate = useNavigate();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const historyData = [
-    {
-      id: 1,
-      titulo: "Operações Fundamentais",
-      data: "08/05/2026",
-      acertos: 4,
-      total: 5,
-      assunto: "Aritmética",
-      dificuldade: "Fácil",
-      perguntas: [
-        {
-          q: "Quanto é 7 x 8?",
-          r: "56",
-          correta: "56",
-          isRight: true
-        },
-        {
-          q: "Qual o resultado de 155 + 45?",
-          r: "200",
-          correta: "200",
-          isRight: true
-        },
-        {
-          q: "Qual o valor de 100 / 4?",
-          r: "20",
-          correta: "25",
-          isRight: false
-        },
-        {
-          q: "Resolva: (10 + 5) * 2",
-          r: "30",
-          correta: "30",
-          isRight: true
-        },
-        {
-          q: "Quanto é 9 - (3 x 2)?",
-          r: "3",
-          correta: "3",
-          isRight: true
-        }
-      ]
-    },
-    {
-      id: 2,
-      titulo: "Geometria Plana",
-      data: "06/05/2026",
-      acertos: 2,
-      total: 3,
-      assunto: "Geometria",
-      dificuldade: "Média",
-      perguntas: [
-        {
-          q: "Quantos lados tem um hexágono?",
-          r: "6",
-          correta: "6",
-          isRight: true
-        },
-        {
-          q: "Qual a fórmula da área do quadrado?",
-          r: "Lado x Lado",
-          correta: "Lado x Lado",
-          isRight: true
-        },
-        {
-          q: "O que é um triângulo isósceles?",
-          r: "Três lados iguais",
-          correta: "Dois lados iguais",
-          isRight: false
-        }
-      ]
-    },
-    {
-      id: 3,
-      titulo: "Equações de 1º Grau",
-      data: "04/05/2026",
-      acertos: 1,
-      total: 2,
-      assunto: "Álgebra",
-      dificuldade: "Média",
-      perguntas: [
-        {
-          q: "Se 2x = 10, qual o valor de x?",
-          r: "5",
-          correta: "5",
-          isRight: true
-        },
-        {
-          q: "Resolva: x + 7 = 12",
-          r: "4",
-          correta: "5",
-          isRight: false
-        }
-      ]
-    }
-  ];
-
+  const [historyData, setHistoryData] = useState([]);
   const handleOpenDetails = (quiz) => {
     setSelectedQuiz(quiz);
     setIsModalOpen(true);
   };
+  useEffect(() => {
 
+    const idAluno = localStorage.getItem('idAluno');
+
+    if (!idAluno) {
+      navigate('/');
+      return;
+    }
+
+    fetch(
+      `http://localhost:3001/aluno/${idAluno}/historico`
+    )
+      .then(res => res.json())
+      .then(data => {
+
+        setHistoryData(data || []);
+
+      })
+      .catch(err => {
+
+        console.error(
+          'Erro ao carregar histórico:',
+          err
+        );
+
+      });
+
+  }, [navigate]);
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedQuiz(null);
   };
 
   const menuConfig = [
-    { label: "Dashboard", onClick: () => console.log("Home") },
-    { label: "Minha Sala", onClick: () => console.log("Salas") },
-    { label: "Histórico", onClick: () => console.log("Relatorios") },
-    { label: "Sair", onClick: () => console.log("Sair") },
+
+    {
+      label: "Dashboard",
+      onClick: () => navigate('/home-aluno')
+    },
+
+    {
+      label: "Minha Sala",
+      onClick: () => console.log("Minha Sala")
+    },
+
+    {
+      label: "Histórico",
+      onClick: () => navigate('/StudentHistory')
+    },
+
+    {
+      label: "Sair",
+      onClick: () => {
+
+        localStorage.clear();
+        navigate('/');
+
+      }
+    }
+
   ];
 
   return (
     <DashboardLayout
       sidebarTitle="Aluno"
       menuItems={menuConfig}
-      userName="Marcos Algusto">
+      userName={
+        localStorage.getItem('userName') || 'Aluno'
+      }>
 
       <S.Container>
 
@@ -140,7 +96,7 @@ function StudentHistory() {
 
           {historyData.map((quiz) => {
 
-            const percentage = (quiz.acertos / quiz.total) * 100;
+            const percentage = quiz.nota * 10;
 
             return (
               <S.HistoryCard
@@ -161,7 +117,7 @@ function StudentHistory() {
                   />
 
                   <small>
-                    {quiz.acertos} de {quiz.total} acertos
+                    Nota: {quiz.nota.toFixed(1)}
                   </small>
 
                 </div>
