@@ -1,12 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import db from './date/db.js';
+import { conectarArduino, enviarParaArduino, enviarPerguntaParaArduino, getUltimaResposta } from './ArduinoService.js';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+conectarArduino();
 
 const PERFIS = {
     PROFESSOR: 1,
@@ -1977,7 +1980,7 @@ app.post('/resultados', (req, res) => {
             notaFinal,
             acertos
         ],
-        function(err) {
+        function (err) {
 
             if (err) {
 
@@ -1999,6 +2002,95 @@ app.post('/resultados', (req, res) => {
         }
     );
 });
+// =====================================
+// Arduino
+// =====================================
+
+// teste simples
+app.post(
+    '/arduino/teste',
+    async (req, res) => {
+
+        try {
+
+            await enviarParaArduino(
+                'OLA ALUNO'
+            );
+
+            res.json({
+                sucesso: true
+            });
+
+        } catch (erro) {
+
+            res.status(500).json({
+                erro: erro.message
+            });
+        }
+    }
+);
+
+// recebe pergunta do quiz
+app.post(
+    '/arduino/pergunta',
+    async (req, res) => {
+
+        try {
+
+            await enviarPerguntaParaArduino(
+                req.body
+            );
+
+            res.json({
+                sucesso: true
+            });
+
+        } catch (erro) {
+
+            res.status(500).json({
+                erro: erro.message
+            });
+        }
+    }
+);
+
+// finaliza quiz
+app.post(
+    '/arduino/fim',
+    async (req, res) => {
+
+        try {
+
+            await enviarParaArduino(
+                'FIM_QUIZ'
+            );
+
+            res.json({
+                sucesso: true
+            });
+
+        } catch (erro) {
+
+            res.status(500).json({
+                erro: erro.message
+            });
+        }
+    }
+);
+app.get(
+    '/arduino/resposta',
+    (req, res) => {
+
+        res.json({
+            resposta:
+                getUltimaResposta()
+        });
+    }
+);
+
+// =====================================
+// Fim Arduino
+// =====================================
 const PORT = 3001;
 app.listen(PORT, () => {
 

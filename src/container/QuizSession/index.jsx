@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+
 import DashboardLayout from '../../components/DashboardLayout';
 import ResultBar from '../../components/ResultBar';
 import { MyButton } from '../../components/Buttons';
@@ -10,6 +11,14 @@ function QuizPage() {
 
   const navigate = useNavigate();
   const idQuiz = localStorage.getItem('quizSelecionado');
+
+  const [ultimaRespostaArduino,
+    setUltimaRespostaArduino] =
+    useState(null);
+
+  const [aguardandoResposta,
+    setAguardandoResposta] =
+    useState(false);
 
   const [loading, setLoading] = useState(true);
 
@@ -45,8 +54,24 @@ function QuizPage() {
 
   }, [idQuiz]);
 
+
+  useEffect(() => {
+
+    if (!quizData) return;
+
+    setAguardandoResposta(false);
+
+    const perguntaAtual =
+      quizData.perguntas[currentStep];
+
+    enviarPerguntaParaArduino(
+      perguntaAtual
+    );
+
+  }, [quizData, currentStep]);
+
   const carregarQuiz = async () => {
-    console.log('Buscando quiz:',idQuiz);
+    console.log('Buscando quiz:', idQuiz);
     try {
 
       const response =
@@ -72,6 +97,59 @@ function QuizPage() {
     }
   };
 
+  useEffect(() => {
+
+    const intervalo =
+      setInterval(async () => {
+
+        try {
+
+          const resposta =
+            await fetch(
+              'http://localhost:3001/arduino/resposta'
+            );
+
+          const dados =
+            await resposta.json();
+
+          if (
+            dados.resposta &&
+            dados.resposta !== ultimaRespostaArduino
+          ) {
+
+            setUltimaRespostaArduino(
+              dados.resposta
+            );
+
+            const opcao =
+              parseInt(
+                dados.resposta
+              ) - 1;
+
+            if (
+              opcao >= 0 &&
+              opcao <= 3
+            ) {
+
+              handleAnswer(
+                opcao
+              );
+            }
+          }
+
+        } catch (erro) {
+
+          console.error(
+            erro
+          );
+        }
+
+      }, 1000);
+
+    return () =>
+      clearInterval(intervalo);
+
+  }, []);
   // ====================================================
   // RANKING
   // ====================================================
@@ -118,6 +196,10 @@ function QuizPage() {
   // ====================================================
 
   const handleAnswer = (index) => {
+    if (aguardandoResposta) return;
+    setAguardandoResposta(true);
+
+    if (!quizData) return;
 
     const perguntaAtual =
       quizData.perguntas[currentStep];
@@ -125,7 +207,8 @@ function QuizPage() {
     const answer = {
 
       isRight:
-        index === perguntaAtual.correta
+        index ===
+        perguntaAtual.correta
     };
 
     const novasRespostas = [
@@ -133,9 +216,10 @@ function QuizPage() {
       answer
     ];
 
-    setUserAnswers(
-      novasRespostas
-    );
+    setUserAnswers(prev => [
+      ...prev,
+      answer
+    ]);
 
     if (
       currentStep + 1 <
@@ -148,71 +232,115 @@ function QuizPage() {
 
     } else {
 
+      fetch(
+        'http://localhost:3001/arduino/fim',
+        {
+          method: 'POST'
+        }
+      );
+
       setIsFinished(true);
     }
   };
+  // ====================================================
+  // Arduino comunicações
+  // ====================================================
+  const enviarPerguntaParaArduino = async (pergunta) => {
+
+    try {
+
+      await fetch(
+        'http://localhost:3001/arduino/pergunta',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body: JSON.stringify({
+
+            enunciado:
+              pergunta.enunciado,
+
+            alternativas:
+              pergunta.alternativas
+          })
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        'Erro ao enviar para Arduino',
+        error
+      );
+    }
+  };
+
 
   // ====================================================
   // SALVAR RESULTADO
   // ====================================================
 
-const salvarResultado = async () => {
+  const salvarResultado = async () => {
 
-  try {
+    try {
 
-    const idAluno =
-      localStorage.getItem('idAluno');
+      const idAluno =
+        localStorage.getItem('idAluno');
 
-    const acertos =
-      userAnswers.filter(
-        a => a.isRight
-      ).length;
+      const acertos =
+        userAnswers.filter(
+          a => a.isRight
+        ).length;
 
-    const notaFinal =
-      Number(
-        (
-          (acertos /
-            quizData.perguntas.length) *
-          10
-        ).toFixed(2)
+      const notaFinal =
+        Number(
+          (
+            (acertos /
+              quizData.perguntas.length) *
+            10
+          ).toFixed(2)
+        );
+
+      const response =
+        await fetch(
+          'http://localhost:3001/resultados',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type':
+                'application/json'
+            },
+            body: JSON.stringify({
+              idAluno,
+              idQuiz,
+              notaFinal,
+              acertos
+            })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      console.log(
+        'Resultado salvo:',
+        data
       );
 
-    const response =
-      await fetch(
-        'http://localhost:3001/resultados',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-          body: JSON.stringify({
-            idAluno,
-            idQuiz,
-            notaFinal,
-            acertos
-          })
-        }
+      navigate('/home-aluno');
+
+    } catch (error) {
+
+      console.error(
+        'Erro salvar resultado',
+        error
       );
-
-    const data =
-      await response.json();
-
-    console.log(
-      'Resultado salvo:',
-      data
-    );
-
-    navigate('/home-aluno');
-
-  } catch (error) {
-
-    console.error(
-      'Erro salvar resultado',
-      error
-    );
-  }
-};
+    }
+  };
 
   // ====================================================
   // LOADING
@@ -248,9 +376,10 @@ const salvarResultado = async () => {
       ).length;
 
     const score =
-      (acertos /
-        quizData.perguntas.length) *
-      100;
+      (
+        acertos /
+        quizData.perguntas.length
+      ) * 100;
 
     const rank =
       getRank(score);
@@ -267,84 +396,32 @@ const salvarResultado = async () => {
 
         <S.FinishContainer>
 
-          <div
-            className="rank-icon"
-            style={{
-              filter:
-                `drop-shadow(0 0 15px ${rank.color}66`
-            }}
-          >
-            {rank.icon}
-          </div>
-
-          <h2
-            style={{
-              color: rank.color
-            }}
-          >
-            {rank.msg}
+          <h2>
+            Quiz Finalizado
           </h2>
+
+          <h3>
+            {rank.icon}
+            {' '}
+            {rank.msg}
+          </h3>
 
           <p>
 
-            Você completou
-
-            <strong>
-              {' '}
-              {quizData.titulo}
-            </strong>
+            Acertos:
+            {' '}
+            {acertos}
+            {' / '}
+            {
+              quizData.perguntas.length
+            }
 
           </p>
-
-          <div
-            style={{
-              margin: '30px 0',
-              width: '100%'
-            }}
-          >
-
-            <ResultBar
-              label="Desempenho Final"
-              percentage={score}
-              color={rank.color}
-            />
-
-          </div>
-
-          <S.StatsInfo>
-
-            <div>
-              <strong>
-                {acertos}
-              </strong>
-
-              <span>
-                Acertos
-              </span>
-            </div>
-
-            <div>
-              <strong>
-                {
-                  quizData.perguntas.length
-                }
-              </strong>
-
-              <span>
-                Total
-              </span>
-            </div>
-
-          </S.StatsInfo>
 
           <MyButton
             onClick={
               salvarResultado
             }
-            style={{
-              marginTop: '25px',
-              width: '100%'
-            }}
           >
             Finalizar Atividade
           </MyButton>
